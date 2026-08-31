@@ -67,7 +67,7 @@ $cyh-flow review PR #456，只做 review，不修改代码
 $cyh-flow fix 修复结账流程的并发问题，建立 Goal，持续对抗复审和修复直到零个可证实 finding
 ```
 
-也可以直接用自然语言描述任务；命中 `SKILL.md` 中的适用范围时，Codex 可以自动选择该 Skill。普通的一次性 bug 修复仍属于 `build`；只有明确要求 Goal、对抗 Agent、重复 review/fix 或“直到 bug 为 0”时才进入 `fix`。若一句话混合了多个模式，CYH Flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，实现或持续修复也不会自动进入交付。
+CYH Flow 被设置为仅显式调用：普通的自然语言 plan、build、review 或 fix 请求不会自动加载该 Skill，只有用户输入 `$cyh-flow ...`，或在 Skill 选择器中主动选择它时才会进入这套流程。显式调用后，普通的一次性 bug 修复仍属于 `build`；只有明确要求 Goal、对抗 Agent、重复 review/fix 或“直到 bug 为 0”时才进入 `fix`。若一句话混合了多个模式，CYH Flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，实现或持续修复也不会自动进入交付。
 
 ## 工作原则
 

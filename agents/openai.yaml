@@ -2,3 +2,6 @@ interface:
   display_name: "CYH Flow"
   short_description: "Plan, build, review, and goal-backed bug fixing"
   default_prompt: "Use $cyh-flow to plan, build, review, or run a goal-backed adversarial fix loop for this software task."
+
+policy:
+  allow_implicit_invocation: false
