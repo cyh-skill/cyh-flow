@@ -1,6 +1,6 @@
 ---
 name: cyh-flow
-description: Route software-development work through CYH's cross-project plan, build, or review workflow with explicit authorization boundaries. Use when the user invokes $cyh-flow, asks to plan a repository change before implementation, asks to implement a scoped plan or task, or asks for a read-only review of local changes, a branch, or a pull request. Do not use for general questions unrelated to software delivery.
+description: Route software-development work through CYH's cross-project plan, build, review, or goal-backed adversarial fix workflow with explicit authorization boundaries. Use when the user invokes $cyh-flow, asks to plan or implement a scoped repository change, asks for a read-only review, or explicitly requests a persistent review-fix-re-review loop until no supported findings remain. Do not use for general questions unrelated to software delivery.
 ---
 
 # CYH Flow
@@ -15,23 +15,26 @@ The supported explicit forms are:
 $cyh-flow plan <requirement or problem>
 $cyh-flow build <plan, issue, task, or requested change>
 $cyh-flow review <working tree, branch, commit, or pull request>
+$cyh-flow fix <bug, failing behavior, branch, pull request, or repair objective>
 ```
 
-`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the skill, but never claim that `/build` or `/cyh-flow` was installed.
+`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts the persistent `fix` loop when available; never claim that `/build`, `/fix`, or `/cyh-flow` was installed.
 
-Use an explicit `plan`, `build`, or `review` argument when present. Otherwise infer the mode conservatively:
+Use an explicit `plan`, `build`, `review`, or `fix` argument when present. Otherwise infer the mode conservatively:
 
 - Requests to investigate, understand, map, propose, or plan are `plan` and read-only.
-- Requests to implement, change, fix, or build are `build` and authorize scoped local file edits only.
+- Requests to implement, change, fix a known issue once, or build are `build` and authorize scoped local file edits only.
 - Requests to review, re-review, audit a diff, or inspect a PR are `review` and read-only.
+- Requests that explicitly require a Goal, adversarial agents, repeated review and repair, or continuing until supported bugs reach zero are `fix` and authorize the scoped local repair loop plus read-only subagent review.
 
-If the request mixes modes, preserve their boundaries and sequence them only as authorized. A plan does not authorize implementation. A review does not authorize fixes. Implementation does not authorize commit, push, PR creation, deployment, production writes, or messages to other people. Those actions require explicit user intent.
+If the request mixes modes, preserve their boundaries and sequence them only as authorized. A plan does not authorize implementation. A review does not authorize fixes. `fix` includes review and local repair within its stated objective, but neither `build` nor `fix` authorizes commit, push, PR creation, deployment, production writes, or messages to other people. Those actions require explicit user intent.
 
 Read exactly one mode reference before acting:
 
 - For `plan`, read [references/plan.md](references/plan.md).
 - For `build`, read [references/build.md](references/build.md).
 - For `review`, read [references/review.md](references/review.md).
+- For `fix`, read [references/fix.md](references/fix.md).
 
 ## Establish project context
 
