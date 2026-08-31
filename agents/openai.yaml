@@ -1,0 +1,4 @@
+interface:
+  display_name: "CYH Flow"
+  short_description: "Cross-project planning, building, and review"
+  default_prompt: "Use $cyh-flow to plan, build, or review this software task with the correct authorization boundary."
