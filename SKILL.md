@@ -54,7 +54,7 @@ If the target, authorization, or destructive scope remains materially ambiguous 
 
 - Never merge a pull request.
 - Do not reset, clean, discard, overwrite, or force-push work unless the user explicitly authorizes the exact target after the loss scope is shown.
-- Prefer the smallest change that satisfies the request and reuse established project patterns before introducing new abstractions.
+- Prefer the optimal coherent solution for the real requirement and repository constraints. Reuse established project patterns before introducing new abstractions, but treat fewer lines or files only as a tiebreaker between equally correct, clear, maintainable, and verifiable options.
 - Treat live refs, PR state, CI, deployments, configuration, and production data as time-sensitive; verify them in the current run.
 - Separate source inspection, local validation, CI, deployment/runtime evidence, UI or device evidence, and business acceptance. Evidence in one lane does not prove another.
 - Report pre-existing failures separately from failures introduced by the requested change.

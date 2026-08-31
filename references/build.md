@@ -13,7 +13,7 @@ Do not use destructive Git operations as an implementation shortcut. Do not modi
 
 ## Implement and verify
 
-1. Make the smallest coherent change that satisfies the agreed behavior.
+1. Implement the optimal coherent solution for the agreed behavior and repository constraints. Compare viable reuse, standard-library, native-platform, installed-dependency, direct-code, and new-abstraction options; prefer less code only when correctness, clarity, maintainability, testability, performance, and compatibility remain equal.
 2. Add or update tests when the project normally tests that behavior or the regression risk warrants them.
 3. Run focused checks early, then broader checks in proportion to risk and repository norms. Inspect every failure and distinguish introduced failures from the baseline.
 4. Exercise the real user flow when UI, device, browser, deployment, or external integration behavior is part of acceptance and the required access is available.

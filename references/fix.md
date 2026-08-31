@@ -12,7 +12,7 @@ The Goal must preserve the ordinary authorization boundary. It may continue revi
 
 ## Baseline review before repair
 
-Perform a fresh review before the first edit. Read the full relevant diff and surrounding implementation, not only the named failing line, then trace callers, state transitions, error paths, contracts, tests, platform variants, and operational boundaries far enough to identify root causes and likely sibling failures.
+Perform a fresh review before the first edit. Read the full relevant diff and surrounding implementation, not only the named failing line, then trace callers, state transitions, error paths, contracts, tests, platform variants, and operational boundaries far enough to identify root causes and likely sibling failures. Enumerate the expected affected surfaces independently of the diff and investigate the difference between that set and the surfaces intentionally changed, intentionally preserved with a reason, and actually validated.
 
 Maintain a compact finding ledger containing a stable ID, lens, severity, location, triggering scenario, evidence, validation method, and status. Add every concrete in-scope defect backed by code, reproduction, a failing check, or strong reachability evidence, including supported defects that need a product decision, external change, or new permission and therefore remain blocked rather than locally fixable. Do not treat preferences, speculative hardening, or formatter-level style as bugs, and do not patch a reviewer claim until the main agent has reproduced or independently confirmed it.
 
@@ -20,7 +20,7 @@ The original reported failure must itself be accounted for: reproduce it on the 
 
 ## First repair
 
-Repair the validated baseline findings in dependency order, preferring the smallest coherent root-cause correction over symptom patches. Add or strengthen regression tests where the project normally tests the behavior or where a recurring defect needs a durable guard. Run focused checks after each coherent change, then broader relevant checks before adversarial review. Keep pre-existing failures separate from failures introduced by the repair.
+Repair the validated baseline findings in dependency order, choosing the optimal coherent root-cause correction for the real behavior and repository constraints instead of optimizing for line count or diff size. Prefer a shared ownership boundary over repeated symptom patches when consumer contracts align, but keep distinct behavior separate when they do not. Add or strengthen regression tests where the project normally tests the behavior or where a recurring defect needs a durable guard. Run focused checks after each coherent change, then broader relevant checks before adversarial review. Keep pre-existing failures separate from failures introduced by the repair.
 
 Use one mutually exclusive writer for the entire Goal. Only the main agent or one explicitly designated writer edits the working tree, and writer ownership must never overlap. Parallel agents in this mode are reviewers, explorers, or test/log analysts and must remain read-only so their work cannot conflict or contaminate the review target.
 
@@ -35,6 +35,7 @@ Choose lenses according to the change and cover every applicable risk surface ac
 - requirement completeness, core correctness, state transitions, error handling, concurrency, ordering, cleanup, and boundary values;
 - authentication, authorization, tenant or ownership isolation, data validation, secrets, logging, and destructive behavior;
 - API, schema, migration, configuration, caller, legacy-data, localization, accessibility, browser, device, and platform compatibility;
+- optimal implementation and ownership boundaries, including repository fit, justified reuse, clarity, maintainability, testability, avoidable duplication, speculative abstraction, unnecessary dependencies, and change-scope churn;
 - regression-test quality, flakiness, performance, resource lifecycle, observability, recovery, and real user-flow acceptance.
 
 Spawn at least two distinct reviewer agents, run them concurrently when runtime capacity permits and sequentially otherwise, split broad scopes across additional reviewers only when the lenses are genuinely independent, and wait for every requested result. Each reviewer must return the immutable target identifier, paths and scenarios examined, read-only checks performed, unverified areas, and either no supported finding or a concise finding with location, trigger, impact, evidence, and a fix direction. Reviewers must inspect relevant full paths and cross-file behavior rather than matching wording or reviewing only the latest hunk.
