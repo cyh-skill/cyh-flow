@@ -1,6 +1,6 @@
 # Review mode
 
-Use this mode for a read-only review of local changes, a commit, a branch, or a pull request. The deliverable is verified findings or a clean result, not a patch.
+Use this mode for a read-only review of local changes, a commit, a branch, or a pull request. Run exactly four independent specialist review lanes, then give their reports to a fresh master reviewer for evidence-based rechecking and consolidation. The deliverable is verified findings or an evidence-bounded clean result, not a patch.
 
 ## Review standard
 
@@ -14,11 +14,11 @@ Treat every clean conclusion as evidence-bounded. The goal is to close all suppo
 
 1. Honor a target explicitly named by the user. Otherwise detect local uncommitted work or the branch's real base without assuming `main`.
 2. For a GitHub PR, use `gh` to fetch the live base, head SHA, changed files, commits, description, review threads, and checks. Do not review a stale local approximation when the remote head differs.
-3. Use an isolated worktree or temporary checkout when the current checkout is dirty, on another branch, or would contaminate validation. Do not disturb the user's active worktree.
+3. Use a disposable copy or clone outside the repository when the current checkout is dirty, on another branch, or would contaminate validation. Do not register a worktree in or otherwise change the target repository's git metadata, index, or active worktree.
 4. Include staged, unstaged, and relevant untracked source files for local reviews. Validate that the diff is non-empty before drawing conclusions.
 5. Establish the originating requirement, issue, plan, or user intent. If none exists, state that requirement completeness cannot be verified.
 
-Freeze or record the reviewed target precisely enough that later drift is detectable: base, head, merge-base, complete local diff, and relevant untracked deliverables as applicable. A review result belongs to that target, not to a branch or PR name forever.
+Freeze the target as a review packet using [review/reviewer-contract.md](review/reviewer-contract.md). Record base, head, merge-base, complete local diff, relevant untracked deliverables, and a stable target fingerprint as applicable. A review result belongs to that immutable packet, not to a branch or PR name forever.
 
 ## Build the impact closure
 
@@ -46,23 +46,32 @@ After understanding the full flow, use this adapted reuse ladder to discover can
 
 This is a search order, not a command to stop at the first mechanically available option. Compare viable candidates against the hard gates and repository context. Reuse is wrong when semantics, ownership, coupling, lifecycle, or compatibility do not fit; local code is wrong when it needlessly duplicates a proven capability. One line is never a goal by itself, and a shorter diff is only a tiebreaker between equally correct, clear, maintainable, and verifiable solutions.
 
-## Review passes
+## Run the four specialist lanes
 
-Read the full diff, relevant surrounding code, and applicable repository instructions. Check:
+After the packet and impact map are frozen, launch one read-only subagent for each role below. Give every lane the same packet, [review/reviewer-contract.md](review/reviewer-contract.md), its role file, and no other reviewer's output:
 
-- Requirement completeness and scope: missing behavior, partial implementation, wrong interpretation, or unrelated changes.
-- Correctness: logic, error paths, state transitions, concurrency, ordering, idempotency, cleanup, and boundary values.
-- Security and data boundaries: authentication, authorization, tenant or ownership isolation, input validation, secrets, logging, and destructive behavior.
-- Compatibility and contracts: API shapes, schema and migration behavior, callers, legacy data, configuration, localization, and platform differences.
-- Optimality and project fit: whether the chosen ownership boundary and implementation beat the viable alternatives above without duplicate code, speculative abstraction, hidden cleverness, unnecessary dependencies, or avoidable churn.
-- Tests and acceptance: whether tests fail for the relevant broken behavior, exercise affected consumers and sibling paths, and leave any evidence lane uncovered.
-- Operations and lifecycle: performance where material, resource cleanup, retries, recovery, observability, rollout, migration, and rollback behavior.
+1. `codex-correctness` using [review/codex-reviewer.md](review/codex-reviewer.md).
+2. `ponytail-complexity` using [review/ponytail-reviewer.md](review/ponytail-reviewer.md).
+3. `differential-security` using [review/differential-reviewer.md](review/differential-reviewer.md).
+4. `performance-engineer` using [review/performance-reviewer.md](review/performance-reviewer.md).
 
-Run focused, non-mutating checks when they materially increase confidence. Use an isolated worktree if a command writes caches or generated files. Do not claim CI passed while checks are pending, skipped, or absent.
+Start all four concurrently when capacity permits. Spawn every specialist with no inherited conversation turns (`fork_turns: "none"` or the runtime's equivalent) and put only the immutable packet, common contract, role-file path, and execution boundary in its initial task. If the runtime cannot provide isolated context, mark that lane blocked instead of leaking another reviewer's result into it.
+
+If the runtime has fewer free slots, use the maximum available parallelism and start each remaining isolated lane as soon as a slot opens; never collapse two personalities into one agent, expose one lane's conclusions to another, or omit a lane. A lane must not spawn more agents. The repository-carried adapter is the complete controlling contract; its pinned upstream link is provenance, not permission to dynamically execute an upstream workflow with different output, write, or nested-agent behavior.
+
+Each lane reads the full diff, relevant surrounding code, applicable instructions, and the impact-map surfaces material to its lens. It returns only the common structured envelope. A malformed or target-mismatched result gets one isolated correction attempt with the same packet. If correction fails, preserve the raw result using the terminal transport schema in the common contract, including that role, target, `terminal_status: malformed` for a schema failure or `terminal_status: invalid` for a target mismatch, validation errors, and raw-output digest; never invent findings or a completed reviewer report.
+
+Run focused checks when they materially increase confidence. A check may write only inside an exact coordinator-created system temporary directory or disposable repository copy; it must not change the target repository, git metadata, dependencies, user configuration, remote service, browser, infrastructure, or production state. Do not install packages during review. Read-only network requests are allowed when needed to inspect the named target. The coordinator may remove only the exact temporary path it created after capturing results; report any residue it cannot safely remove. Do not claim CI passed while checks are pending, skipped, or absent.
+
+## Run the master recheck
+
+Wait for all four lanes to finish or reach a terminal blocked, invalid, or malformed state, then start a fresh read-only subagent with no inherited conversation turns using [review/master-reviewer.md](review/master-reviewer.md). Give it the immutable packet, exactly four lane records (valid envelopes or terminal transport records), and read-only access to the target repository. The master is sequential and is not a fifth specialist vote: it independently reopens the code, verifies target identity, tests the evidence and reachability of every candidate, deduplicates by root cause and repair boundary, resolves conflicts, and recalculates final P0-P3 priority.
+
+Agreement is not proof and disagreement is not disproof. Keep unsupported candidates in the rejected or unresolved audit trail instead of silently deleting them. A strong finding from one lane survives if the master verifies it; a popular finding is rejected if the evidence fails. The coordinator must validate the master's target fingerprint and schema, verify that every input candidate has exactly one disposition, and recompute the clean gate from the four lane records, impact closure, evidence lanes, coverage, and adjudicated candidates. Never trust `clean_eligible` as an assertion by itself.
 
 ## Findings
 
-Only report actionable findings supported by code, reproduction, tests, or strong reachability evidence. Rank them by user impact and likelihood, consolidate sibling symptoms under their shared root cause, and provide:
+Only present verified actionable findings supported by code, reproduction, tests, measurement, or strong reachability evidence. Rank them by user impact and likelihood, consolidate sibling symptoms under their shared root cause, preserve which reviewers reported them, and provide:
 
 - Location.
 - Concrete failure or risk.
@@ -72,7 +81,7 @@ Only report actionable findings supported by code, reproduction, tests, or stron
 
 Do not invent findings, style preferences, or hypothetical redesigns to appear thorough. An optimality finding must name the viable replacement and explain why it is better under the real constraints; “make this shorter” is not enough.
 
-Report a clean result only when the impact map has no unexplained difference, no supported actionable finding remains, and the applicable evidence lanes have been exercised. Phrase it as “no supported findings within the reviewed target, enumerated impact surface, and executed evidence lanes,” then list material unverified areas separately. If a required surface cannot be inspected or validated, report the limitation instead of declaring the implementation fully clean.
+Report a clean result only when all four specialist lanes and the master completed against the same target, the impact map has no unexplained difference, no verified finding, advisory, or unresolved actionable candidate remains, no material coverage item is unverified, and every applicable evidence lane was exercised. Phrase it as “no supported findings within the reviewed target, enumerated impact surface, and executed evidence lanes,” then list immaterial unverified areas separately. A blocked lane, target drift, missing report, required surface that cannot be inspected, or unresolved material candidate makes the result incomplete rather than clean.
 
 ## Side-effect boundary
 

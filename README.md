@@ -5,9 +5,9 @@
 ```text
 用户请求
    |
-   +-- plan   -> 只读调查 -> 可执行方案
+   +-- plan   -> 只读调查 -> 单一 Spec + Plan 文档 -> 可执行方案
    +-- build  -> 范围内修改 -> 分层验证
-   +-- review -> 只读审查 -> 有证据的 findings / clean result
+   +-- review -> 四路独立只读审查 -> 主复查 -> 有证据的 findings / clean result
    `-- fix    -> Goal: review -> 修复 -> 对抗复审 -> 循环至零 finding
 ```
 
@@ -15,9 +15,9 @@
 
 | 模式 | 适合处理 | 默认允许 | 默认不允许 |
 | --- | --- | --- | --- |
-| `plan` | 理解需求、追踪调用链、评估影响、制定实施方案 | 读取代码、配置、文档和实时状态 | 修改文件、建分支、提交、推送、部署或更新外部系统 |
+| `plan` | 定义需求 Spec、追踪调用链、评估影响、制定实施 Plan | 读取代码、配置、文档和实时状态；创建或更新该需求唯一且同时包含 Spec 与 Plan 的 `.md` | 修改应用代码或无关文档、把同一需求拆成多份决策文档、建分支、提交、推送、部署或更新外部系统 |
 | `build` | 实现明确需求、计划、Issue 或已确认修复 | 在约定范围内修改本地文件并运行验证 | 未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
-| `review` | 审查工作区、分支、提交或 Pull Request，判断是否以最优实现覆盖完整关联面 | 读取完整 diff、上下文、关联影响图、检查与实时 PR 状态 | 直接修复、提交、推送、批准、发评论或改变 PR 状态 |
+| `review` | 审查工作区、分支、提交或 Pull Request，判断是否以最优实现覆盖完整关联面 | 冻结目标，运行四路独立只读审查和一次主复查，读取完整 diff、上下文、关联影响图、检查与实时 PR 状态 | 直接修复、提交、推送、批准、发评论或改变 PR 状态 |
 | `fix` | 持续审查和修复复杂问题，直到各适用角度没有可证实 finding | 建立 Goal、范围内本地修复、验证、只读多 Agent 对抗复审 | 未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 
 四种模式共享几条硬边界：永不 Merge PR；不擅自丢弃或覆盖用户工作；破坏性 Git 操作必须先说明精确目标和损失范围；源码检查、自动化测试、CI、部署运行时、UI/设备证据与业务验收分别报告，不能互相替代。
@@ -69,6 +69,8 @@ $cyh-flow fix 修复结账流程的并发问题，建立 Goal，持续对抗复�
 
 CYH Flow 被设置为仅显式调用：普通的自然语言 plan、build、review 或 fix 请求不会自动加载该 Skill，只有用户输入 `$cyh-flow ...`，或在 Skill 选择器中主动选择它时才会进入这套流程。显式调用后，普通的一次性 bug 修复仍属于 `build`；只有明确要求 Goal、对抗 Agent、重复 review/fix 或“直到 bug 为 0”时才进入 `fix`。若一句话混合了多个模式，CYH Flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，实现或持续修复也不会自动进入交付。
 
+Plan 阶段会把所有已经确认的需求决策写入同一份 Markdown 文档，并在其中同时维护 `## Spec` 和 `## Plan`：Spec 定义要实现的行为、边界与验收标准，Plan 基于当前代码定义实现方案、影响范围、步骤与验证。先按 Issue、需求标识、标题和内容检索已有文档，同一需求始终原地更新，不拆成 `*-spec.md` 与 `*-plan.md`，也不因新会话、补充讨论或方案迭代创建日期版、`v2` 或其他副本。项目有既定目录和命名时沿用；没有时使用 `docs/plans/<requirement-slug>.md`。跨仓库需求也只维护一份主文档，其他位置只链接，不复制维护。
+
 ## 工作原则
 
 - 先确认真实仓库、工作树、分支、子模块或 worktree，再开始调查或修改。
@@ -77,10 +79,10 @@ CYH Flow 被设置为仅显式调用：普通的自然语言 plan、build、revi
 - GitHub 操作默认使用已认证的 `gh`，并在依赖实时状态时重新读取 PR、检查和远端引用。
 - 浏览器自动化固定使用 `browser-skill:cyh-browser-skill`；普通公开网页检索使用常规搜索能力。
 - 目标是满足真实需求与仓库约束的最优实现，不是最少行数或最小 diff；正确性、安全、数据完整性、兼容性等硬约束满足后，再综合复用程度、架构契合、清晰度、可测试性、可维护性、性能和变更范围作选择。
-- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并用“预期关联面－已解释且已验证关联面”的差集判断是否漏查；一行代码只是可能的结果，不是目标。
-- 最终答复先给结论，再说明证据、未完成验证和仍需用户授权的下一步。
+- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并让 Codex correctness、Ponytail complexity、Differential security、Performance engineer 四路在隔离上下文中审查同一冻结目标，再由独立主 Agent 复核证据、去重和裁决；一行代码只是可能的结果，不是目标。
+- Plan 的最终答复必须给出需求决策文档路径和其中 Spec、Plan 的就绪状态；最终答复先给结论，再说明证据、未完成验证和仍需用户授权的下一步。
 
-Review 设计借鉴了 [Codex Code review](https://learn.chatgpt.com/docs/code-review) 的只读、确定审查范围、输出有优先级且可执行 findings 的原则，也吸收了 [Ponytail](https://github.com/DietrichGebert/ponytail) 中“先理解完整流程，再检查已有实现、标准库、原生能力和依赖”的复用思路；CYH Flow 不采用“最短代码获胜”作为目标，而是要求先闭合全部硬约束与关联影响，再从可行方案中选择最优实现。
+四路人格分别适配自 [OpenAI Codex review rubric](https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/review/rubric.md)、[Ponytail review](https://github.com/DietrichGebert/ponytail/tree/main/skills/ponytail-review)、[Trail of Bits differential-review](https://github.com/trailofbits/skills/tree/main/plugins/differential-review) 和 [performance-testing-review 的 performance engineer](https://github.com/wshobson/agents/tree/main/plugins/performance-testing-review)。上游链接提供真实方法来源，仓库内 adapter 统一冻结目标、只读边界和输出契约；主复查不按投票决定，而是独立验证可达性、影响、测量与证据后再给最终 P0-P3、advisory、rejected 或 unresolved 结论。
 
 ## 仓库结构
 
@@ -90,9 +92,10 @@ cyh-flow/
 |-- agents/
 |   `-- openai.yaml          # Codex UI 展示与默认提示词
 `-- references/
-    |-- plan.md              # 只读调查与实施方案标准
+    |-- plan.md              # 只读调查、单一 Spec + Plan 需求文档标准
     |-- build.md             # 范围内实现、验证与交付边界
-    |-- review.md            # 只读审查、证据和 findings 标准
+    |-- review.md            # 四路并行调度、主复查与 clean gate
+    |-- review/              # 公共契约、四种 reviewer 人格与主复查角色
     `-- fix.md               # Goal、修复和多 Agent 对抗复审循环
 ```
 
