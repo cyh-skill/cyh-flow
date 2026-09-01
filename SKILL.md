@@ -1,6 +1,6 @@
 ---
 name: cyh-flow
-description: Route software-development work through CYH's cross-project plan, build, four-lens parallel review, or goal-backed adversarial fix workflow with explicit authorization boundaries. Use when the user invokes $cyh-flow, asks to plan or implement a scoped repository change, asks for a read-only review, or explicitly requests a persistent review-fix-re-review loop until no supported findings remain. Do not use for general questions unrelated to software delivery.
+description: Route software-development work through CYH's cross-project plan, build, review, repair, convergence, or persistent task-pool workflows with explicit authorization boundaries. Use when the user invokes $cyh-flow to plan or implement a scoped change, review read-only, repair or repeatedly recheck a problem, add bugs or small changes with screenshots to a dated task pool, or independently claim and process stored tasks. Do not use for general questions unrelated to software delivery.
 ---
 
 # CYH Flow
@@ -14,27 +14,37 @@ The supported explicit forms are:
 ```text
 $cyh-flow plan <requirement or problem>
 $cyh-flow build <plan, issue, task, or requested change>
+$cyh-flow build auto <implementation-ready plan, issue, or requirement>
 $cyh-flow review <working tree, branch, commit, or pull request>
-$cyh-flow fix <bug, failing behavior, branch, pull request, or repair objective>
+$cyh-flow fix <known bug, failing behavior, or review finding>
+$cyh-flow converge <objective and user-selected evidence lanes>
+$cyh-flow task-add <bugs, small changes, or follow-up work>
+$cyh-flow task-run [task ID, date, scope, or number of tasks]
 ```
 
-`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts the persistent `fix` loop when available; never claim that `/build`, `/fix`, or `/cyh-flow` was installed.
+`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts `build auto` and `converge` when available; never claim that `/build`, `/fix`, `/converge`, `/task-add`, `/task-run`, or `/cyh-flow` was installed.
 
-Use an explicit `plan`, `build`, `review`, or `fix` argument when present. Otherwise infer the mode conservatively:
+Use an explicit `plan`, `build`, `review`, `fix`, `converge`, `task-add`, or `task-run` argument when present. Otherwise infer the mode conservatively:
 
 - Requests to investigate, understand, map, propose, or plan are `plan`; application code and external state stay read-only, while one canonical requirement plan that fulfills both specification and implementation-planning responsibilities is created or updated.
-- Requests to implement, change, fix a known issue once, or build are `build` and authorize scoped local file edits only.
+- Requests to implement a requirement, plan, feature, or product change are `build` and authorize scoped local file edits only. Both ordinary `build` and explicit `build auto` maximize safe multi-agent implementation and validation over the requested scope: ordinary build stops at the first material unexpected problem or decision point, while auto creates one Goal, makes evidence-grounded in-scope decisions using the coordinator's best judgment, records every problem and automatic decision in one repository-local ledger for later human review, and keeps executing without review gates.
 - Requests to review, re-review, audit a diff, or inspect a PR are `review` and use four independent read-only specialist lanes followed by a fresh master recheck.
-- Requests that explicitly require a Goal, adversarial agents, repeated review and repair, or continuing until supported bugs reach zero are `fix` and authorize the scoped local repair loop plus read-only subagent review.
+- Requests to repair a known bug, failure, or review finding once are `fix` and authorize scoped local repair plus proportionate validation.
+- Requests that explicitly require a Goal, repeated inspection and repair, simulator or web acceptance loops, or continuing until supported findings reach zero are `converge` and authorize the scoped local convergence loop plus read-only subagent analysis. The user decides whether the required evidence is code review, browser testing, simulator or device testing, automated checks, runtime evidence, security or performance validation, or another named procedure; do not make review or browser testing mandatory merely because the mode is `converge`.
+- Requests to analyze and store one or many bugs, small changes, chores, or follow-ups without implementing them are `task-add`; only the repository-local dated task-pool Markdown and its evidence attachments may change.
+- Requests to process stored work are `task-run`; every Agent independently claims one `pending` task by atomically changing its document status to `doing` with the Agent identity and claim time before any investigation or edit.
 
-If the request mixes modes, preserve their boundaries and sequence them only as authorized. A plan authorizes only its canonical requirement decision document, not implementation. A review does not authorize fixes. `fix` includes review and local repair within its stated objective, but neither `build` nor `fix` authorizes commit, push, PR creation, deployment, production writes, or messages to other people. Those actions require explicit user intent.
+If the request mixes modes, preserve their boundaries and sequence them only as authorized. A plan authorizes only its canonical requirement decision document, not implementation. A review does not authorize repair. Build is execution-only and never invokes review as an implementation gate; ordinary build stops on the first material problem or decision point, while `build auto` autonomously decides and persists through in-scope intermediate problems, recording those decisions for later human review without seeking finding-zero. `fix` is one bounded repair, while `converge` may repeat inspection, local repair, and validation until its Goal gate is satisfied. `task-add` archives work but does not implement it; `task-run` authorizes scoped local work only after a successful document-backed claim. None of `build`, `fix`, `converge`, or `task-run` authorizes commit, push, PR creation, deployment, production writes, or messages to other people; those actions require explicit user intent.
 
-Read exactly one mode reference before acting:
+Read exactly one primary mode reference before acting. Load another mode reference only when the selected primary mode explicitly names it as a user-required evidence lane; do not preload unrelated modes:
 
 - For `plan`, read [references/plan.md](references/plan.md).
 - For `build`, read [references/build.md](references/build.md).
 - For `review`, read [references/review.md](references/review.md).
 - For `fix`, read [references/fix.md](references/fix.md).
+- For `converge`, read [references/converge.md](references/converge.md).
+- For `task-add`, read [references/task-add.md](references/task-add.md).
+- For `task-run`, read [references/task-run.md](references/task-run.md).
 
 ## Establish project context
 

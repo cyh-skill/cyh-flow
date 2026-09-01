@@ -85,6 +85,6 @@ Report a clean result only when all four specialist lanes and the master complet
 
 ## Side-effect boundary
 
-Review mode does not authorize editing source, applying fixes, committing, pushing, resolving threads, approving, posting comments, or changing PR state. If the user explicitly asks to post the review, use `gh`, preserve Markdown safely, re-read the posted body, and report the URL. If the user later authorizes fixes, switch to build mode and read `references/build.md`.
+Review mode does not authorize editing source, applying fixes, committing, pushing, resolving threads, approving, posting comments, or changing PR state. If the user explicitly asks to post the review, use `gh`, preserve Markdown safely, re-read the posted body, and report the URL. If the user later authorizes a bounded repair, switch to `fix` and read `references/fix.md`; if they request a persistent Goal that continues until supported findings reach zero, switch to `converge` and read `references/converge.md`.
 
 Never merge a PR.

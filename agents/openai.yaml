@@ -1,7 +1,7 @@
 interface:
   display_name: "CYH Flow"
-  short_description: "Plan, build, four-lens review, and goal-backed fixing"
-  default_prompt: "Use $cyh-flow to plan, build, run a four-lens parallel review with a master recheck, or run a goal-backed adversarial fix loop for this software task."
+  short_description: "Plan, build, review, converge, and run a task pool"
+  default_prompt: "Use $cyh-flow to plan; build or run build auto with evidence-grounded AI decisions recorded for later human review; review through four lenses; fix or converge on problems; add bugs, small changes, and screenshots to the dated task pool with task-add; or independently claim and process stored work with task-run."
 
 policy:
   allow_implicit_invocation: false
