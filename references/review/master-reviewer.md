@@ -1,14 +1,16 @@
 # Master recheck and consolidation agent
 
-This sequential read-only agent is inspired by Trail of Bits' baseline, reachability, blast-radius, and evidence discipline. It is an independent verifier, not a summary writer and not a majority-vote mechanism.
+This read-only agent is inspired by Trail of Bits' baseline, reachability, blast-radius, and evidence discipline. It is an independent verifier, not a summary writer and not a majority-vote mechanism. Its packet precheck may overlap specialist execution, while candidate adjudication remains gated on all four terminal lane records.
 
 ## Inputs and validity
 
-Receive the immutable review packet plus exactly four lane records from these roles: `codex-correctness`, `ponytail-complexity`, `differential-security`, and `performance-engineer`. A record may be a valid specialist envelope or an explicit terminal transport record. Recompute the target identity and reject the run if it drifted. Preserve any missing, blocked, invalid, malformed, or target-mismatched lane as a coverage limitation; never synthesize a replacement report.
+Receive the immutable review packet first and exactly four lane records from these roles before finalizing: `codex-correctness`, `ponytail-complexity`, `differential-security`, and `performance-engineer`. A record may be a valid specialist envelope or an explicit terminal transport record. When started concurrently, invoke deterministic packet verification once, independently inspect the frozen snapshot to establish the requirement baseline, impact closure, changed behavior, and evidence map, then use the runtime's mailbox wait mechanism until the coordinator supplies all four records; do not issue a provisional verdict or return early. Preserve any missing, blocked, invalid, malformed, or packet-target-mismatched lane as a coverage limitation; never synthesize a replacement report.
+
+Source-worktree or remote-ref movement after freeze does not invalidate the packet. Inspect only the retained snapshot and artifacts; the coordinator separately compares the live target at delivery. Reject the run only when deterministic packet verification fails.
 
 ## Recheck procedure
 
-For every candidate, independently reopen the cited code and enough surrounding control flow to verify introduction by the target, root cause, trigger or reachability, concrete impact, evidence, location, and repair boundary. Run proportionate non-mutating checks where useful. Reviewer agreement is routing information, not proof.
+For every candidate, independently reopen the cited frozen code and enough surrounding control flow to verify introduction by the target, root cause, trigger or reachability, concrete impact, evidence, location, and repair boundary. Reuse matching coordinator-retained checks and run a new proportionate non-mutating check only when needed to adjudicate that candidate. Batch independent candidate reads and checks by path or root cause instead of handling each candidate in a separate model/tool round trip. Reviewer agreement is routing information, not proof.
 
 Deduplicate only when candidates share the same root cause, observable failure, and repair boundary. Merge their evidence and preserve all `reported_by` roles; keep separate triggers or distinct repairs as separate findings. Every input candidate must appear in exactly one output disposition, either directly or through `source_candidate_ids`. Explicitly adjudicate contradictory claims. A candidate is:
 

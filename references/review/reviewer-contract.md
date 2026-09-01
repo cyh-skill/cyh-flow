@@ -7,13 +7,13 @@ This contract keeps four independent reviewer personalities comparable without e
 The coordinator supplies:
 
 - `target_id`: `sha256:<hex>` fingerprint of the exact canonical target-manifest artifact described below.
-- `repo_root` and `target_kind`: local changes, commit, branch, PR, or explicit range.
+- `repo_root`, immutable `snapshot_root`, retained `packet_dir`, and `target_kind`: local changes, commit, branch, PR, or explicit range.
 - `base_sha`, `head_sha`, and `merge_base_sha` when applicable; use explicit `null` rather than guessing.
-- `changed_files`, exact references to the retained diff artifacts, and hashes for relevant untracked files; mutable commands are not a substitute for the frozen artifacts.
+- `changed_files`, exact references to the retained diff artifacts, and copied content plus hashes for relevant untracked files; mutable commands are not a substitute for the frozen artifacts.
 - `requirement`: user intent, issue, plan, PR description, or `unknown` with the resulting limitation.
 - `project_instructions`, repository constraints, impact map, and allowed non-mutating checks.
 
-The coordinator alone serializes the manifest as RFC 8785 JSON Canonicalization Scheme (JCS): UTF-8 without a BOM, lexicographically sorted object keys, canonical JSON numbers, and explicit JSON `null` for inapplicable fields. Use this exact schema and no additional keys:
+The coordinator invokes `scripts/review_snapshot.py freeze`, which alone serializes the manifest as RFC 8785 JSON Canonicalization Scheme (JCS): UTF-8 without a BOM, lexicographically sorted object keys, canonical JSON numbers, and explicit JSON `null` for inapplicable fields. Do not reproduce this logic in an ad hoc command. The script uses this exact schema and no additional keys:
 
 ```json
 {
@@ -38,9 +38,9 @@ The example shows `null` where a field is inapplicable; otherwise every SHA fiel
 
 For a committed range or PR, include fixed base, head, and merge-base SHAs plus the length and SHA-256 of the exact raw `git diff --binary --full-index --no-ext-diff <base>...<head>` artifact as `committed_diff`. For local changes, include the current `HEAD`, separate lengths and SHA-256 values for the exact raw unstaged and cached diff artifacts, and every relevant untracked or submodule entry with mode, size, and content or state SHA-256. Do not normalize paths, content, or line endings. Set `target_id` to `sha256:` plus the lowercase SHA-256 of the exact JCS manifest bytes.
 
-Retain the exact manifest and every referenced diff artifact beside the packet. Every lane and the master hash those same bytes and verify every referenced length and digest; they do not regenerate the serialization or resolve a mutable PR number, branch name, or tag.
+Retain the exact manifest, every referenced diff artifact, copied untracked content, submodule state records, and detached snapshot beside the packet. Every lane and the master invoke `scripts/review_snapshot.py verify` once and inspect that snapshot; they do not regenerate the serialization, rehash the mutable checkout, or resolve a mutable PR number, branch name, or tag.
 
-Before analyzing, recompute or verify the target identity. Return `invalid` if it drifted or cannot be reproduced. Never silently review a nearby branch, stale PR head, incomplete local diff, or regenerated manifest.
+Before analyzing, verify the retained packet identity. Return `invalid` if a retained artifact or snapshot is corrupted, missing, mismatched, or cannot be reproduced. A later source-worktree edit or moving branch/PR ref is live drift, not packet drift: keep reviewing the immutable snapshot and let the coordinator report staleness at delivery. Never silently switch to a nearby branch, newer PR head, incomplete local diff, regenerated manifest, or current source file.
 
 ## Boundaries
 
@@ -48,6 +48,8 @@ Before analyzing, recompute or verify the target identity. Return `invalid` if i
 - Do not spawn another agent or invoke a recursive top-level review command.
 - Keep other specialist reports hidden so the lanes remain independent.
 - Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Checks that write caches or generated output may run only in an exact coordinator-created system temporary directory or disposable repository copy, using already-available dependencies; never install packages during review.
+- Batch independent reads, searches, history queries, and checks within each bounded investigation stage. Read the packet, this contract, the role, and packet verification result once; do not spend later turns rereading unchanged control files or manually repeating deterministic hashes.
+- Reuse coordinator-retained shared check evidence when its target, command, environment, and output digest match the packet. Rerun only a focused check whose result is necessary to verify a candidate.
 - Findings must be introduced by or materially exposed by the reviewed target. Put pre-existing or unproven concerns in `unverified`, not `findings`.
 
 ## Specialist result
