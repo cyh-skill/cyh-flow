@@ -10,8 +10,9 @@ The coordinator supplies:
 - `repo_root`, immutable `snapshot_root`, retained `packet_dir`, and `target_kind`: local changes, commit, branch, PR, or explicit range.
 - `base_sha`, `head_sha`, and `merge_base_sha` when applicable; use explicit `null` rather than guessing.
 - `changed_files`, exact references to the retained diff artifacts, and copied content plus hashes for relevant untracked files; mutable commands are not a substitute for the frozen artifacts.
-- `requirement`: user intent, issue, plan, PR description, or `unknown` with the resulting limitation.
-- `project_instructions`, repository constraints, impact map, and allowed non-mutating checks.
+- `requirement`: fact-only user intent, issue, plan, PR description, or `unknown`, with source provenance and the resulting limitation.
+- `scope_decisions`: explicit accepted, rejected, deferred, or out-of-scope decisions with provenance; use an empty list rather than inventing one.
+- `project_instructions`, repository constraints, a fact-only impact seed, known unknowns, and allowed non-mutating checks. The packet must not contain provisional findings, severity, confidence, or repair advice that could anchor the lanes.
 
 The coordinator invokes `scripts/review_snapshot.py freeze`, which alone serializes the manifest as RFC 8785 JSON Canonicalization Scheme (JCS): UTF-8 without a BOM, lexicographically sorted object keys, canonical JSON numbers, and explicit JSON `null` for inapplicable fields. Do not reproduce this logic in an ad hoc command. The script uses this exact schema and no additional keys:
 
@@ -50,7 +51,21 @@ Before analyzing, verify the retained packet identity. Return `invalid` if a ret
 - Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Checks that write caches or generated output may run only in an exact coordinator-created system temporary directory or disposable repository copy, using already-available dependencies; never install packages during review.
 - Batch independent reads, searches, history queries, and checks within each bounded investigation stage. Read the packet, this contract, the role, and packet verification result once; do not spend later turns rereading unchanged control files or manually repeating deterministic hashes.
 - Reuse coordinator-retained shared check evidence when its target, command, environment, and output digest match the packet. Rerun only a focused check whose result is necessary to verify a candidate.
-- Findings must be introduced by or materially exposed by the reviewed target. Put pre-existing or unproven concerns in `unverified`, not `findings`.
+- Candidates must be introduced by or materially exposed by the reviewed target. Put pre-existing concerns in coverage and unsupported hypotheses in `open_questions`, not `candidates`.
+
+## Candidate admission
+
+The first round discovers and substantiates candidates; it does not produce final findings. A changed condition, enum member, frontend button, nearby pattern, or plausible consequence is a hypothesis rather than proof. Before admitting a candidate, fill every gate below with `passed`, `failed`, `unknown`, or `not_applicable` plus concrete evidence:
+
+- `introduced_by_target`: compare the frozen target with its baseline and identify the exact introduced or materially exposed behavior. This gate is always required and cannot be `not_applicable`.
+- `business_reachability`: trace a real entry point to the behavior. A state-dependent claim also needs a producer, persisted legacy path, fixture, test, runtime record, or authoritative contract that can create the state; a conditional branch or enum value alone does not pass.
+- `authoritative_contract`: inspect the source of truth when semantics cross a boundary. Authorization claims must trace the UI, API request, backend enforcement or FSM, and relevant multi-role behavior; a frontend gate is not the authorization authority.
+- `scope_decision`: inspect available user intent, issue or plan history, and explicit accepted, rejected, deferred, or out-of-scope decisions. `not_applicable` is allowed only after recording which available sources were checked.
+- `repair_ownership`: identify the component or repository that owns the invariant and show that the proposed repair boundary can satisfy the contract; “change the cited line” is not ownership evidence.
+
+Before marking a gate `passed`, actively test the nearest plausible counter-hypothesis: an alternate producer, unreachable business path, backend rejection, different role behavior, preserved legacy route, explicit scope decision, or different owning component. Record those checks in a non-empty `counterevidence_checked` list. If required counterevidence cannot be inspected, that gate is `unknown`, not `passed`.
+
+All applicable gates must be `passed` before an item enters `candidates`. Put a plausible item with any required `unknown` gate in `open_questions` without severity or repair advice. Omit a disproved hypothesis or record the disproof in coverage. Performance candidates may pass reachability and impact with a mechanically proven scale bound; complexity candidates must prove behavioral equivalence and repository ownership fit.
 
 ## Specialist result
 
@@ -76,12 +91,13 @@ Return one JSON object and no prose outside it:
       }
     ]
   },
-  "findings": [
+  "candidates": [
     {
       "id": "role-local stable id",
-      "title": "imperative, specific title",
+      "title": "specific candidate claim",
       "native_severity": "source lens severity",
       "category": "correctness | complexity | security | performance",
+      "claim_type": "local-behavior | state-dependent | cross-boundary | authorization | performance | complexity",
       "path": "repository-relative path",
       "line_start": 1,
       "line_end": 1,
@@ -89,14 +105,30 @@ Return one JSON object and no prose outside it:
       "trigger_or_reachability": "concrete conditions that exercise it",
       "concrete_impact": "observable user, data, security, or resource impact",
       "evidence": ["code, history, test, trace, benchmark, or calculation"],
+      "evidence_gates": {
+        "introduced_by_target": {"status": "passed", "evidence": ["baseline proof"]},
+        "business_reachability": {"status": "passed", "evidence": ["entry point and producer proof"]},
+        "authoritative_contract": {"status": "not_applicable", "evidence": ["why no external authority applies"]},
+        "scope_decision": {"status": "passed", "evidence": ["requirement or decision provenance"]},
+        "repair_ownership": {"status": "passed", "evidence": ["owning boundary proof"]}
+      },
+      "counterevidence_checked": ["baseline, alternate path, or contract that could disprove the claim"],
       "fix_direction": "minimal repair direction, not a patch",
       "confidence": "high | medium | low"
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "role-local question id",
+      "claim": "plausible but unproven concern",
+      "missing_gates": ["business_reachability"],
+      "available_evidence": ["what is currently known"]
     }
   ]
 }
 ```
 
-Use an empty `findings` array when the lane found nothing supported. Do not manufacture a finding for balance. Keep source-native details that do not fit the common fields inside `evidence`.
+Use empty `candidates` and `open_questions` arrays when appropriate. Do not promote an open question to make the report look useful, and do not assign it severity or a repair. `native_severity`, `confidence`, and `fix_direction` on an admitted candidate remain untrusted specialist proposals; the master ignores them until independent falsification is complete. Keep source-native details that do not fit the common fields inside `evidence`.
 
 Set `terminal_reason` to `null` for a completed lane. For `blocked` or `invalid`, provide the precise reason there and keep any partially completed inspection in `coverage`.
 

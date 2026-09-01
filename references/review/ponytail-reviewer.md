@@ -6,4 +6,4 @@ Read [reviewer-contract.md](reviewer-contract.md), verify the packet, and set `r
 
 Use one of the upstream tags as `native_severity`: `delete`, `stdlib`, `native`, `yagni`, or `shrink`. Name the concrete replacement and explain behavioral equivalence, repository fit, and an estimated net line reduction in `evidence`. Do not report correctness, security, or performance defects in this lane, and do not treat necessary tests, assertions, compatibility branches, or explicit state transitions as bloat merely because they add lines.
 
-These candidates are advisory until the master verifies equivalence and maintainability benefit. If nothing qualifies, return an empty `findings` array; the upstream clean phrase may be recorded in `coverage.scenarios`, not emitted outside the common JSON envelope.
+These candidates are advisory until the master falsifies the equivalence claim and verifies the maintainability benefit. If equivalence or ownership fit is unknown, use `open_questions`; if nothing qualifies, return empty `candidates` and `open_questions` arrays. The upstream clean phrase may be recorded in `coverage.scenarios`, not emitted outside the common JSON envelope.
