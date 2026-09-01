@@ -16,6 +16,12 @@ If the user did not specify evidence lanes, or explicitly delegated the choice, 
 
 Evidence selection controls which lanes must be actively executed; it does not authorize ignoring a concrete finding encountered elsewhere while repairing or tracing the selected flow. Any supported, actionable, in-scope finding actually discovered enters the ledger and blocks finding zero until repaired, rejected with evidence, explicitly moved out of scope by the user, or otherwise resolved under the Goal contract.
 
+## Parallel evidence execution
+
+For the baseline and every recheck round, decompose the selected evidence contract and independent impact surfaces into bounded subagent tasks, use the maximum useful concurrency, and refill available slots with the next ready lane. Assign separate agents to independent code, test, contract, log, platform, security, performance, browser, or device evidence only when their targets and runtime resources do not conflict. Each agent returns the fixed target it examined, procedure and evidence, findings, unverified areas, and any invalidated downstream lanes.
+
+Maintain one mutually exclusive repair writer and one coordinator-owned finding ledger. Evidence agents remain read-only against the shared repository; the coordinator verifies, deduplicates, and records their results before the writer repairs them. When a selected lane has its own stronger topology, such as four-lens review, use that protocol. Serialize agents that would otherwise operate the same browser target, simulator, device, database, cache, build output, or external environment.
+
 Define “finding zero” as zero supported, actionable, in-scope findings remaining in the ledger, the initiating failure accounted for, and every user-required evidence lane passing or producing no supported finding on the final target. It is not a claim that the software is universally defect-free. A blocked required lane or material unverified result prevents completion unless the user explicitly revises the Goal contract.
 
 The Goal preserves ordinary authorization boundaries. Browser, simulator, device, API, database, scan, and load-test actions may have side effects; use only the environment and actions the user authorized. Never treat a local repair as proof that a remote branch, PR, deployment, simulator build, browser session, or business workflow was updated.
@@ -36,7 +42,7 @@ When the selected lane is full code review, load [review.md](review.md) and use 
 
 ## Repair and recheck loop
 
-Use one mutually exclusive writer for the entire Goal. Parallel agents may inspect code, analyze logs, or review frozen targets, but they remain read-only and must not share writer ownership.
+Use one mutually exclusive writer for the entire Goal. Parallel agents inspect code, analyze logs, exercise non-conflicting evidence lanes, or review frozen targets, but they remain read-only against the shared repository and must not share writer ownership.
 
 Repeat:
 

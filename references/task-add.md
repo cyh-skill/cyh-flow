@@ -8,6 +8,14 @@ Resolve the real repository first, then inspect only enough read-only context to
 
 Store confirmed facts separately from assumptions. Each task should state the observed problem or desired outcome, relevant scope and evidence, a concise analysis, and an acceptance condition another Agent can use without needing the original conversation. Missing information does not block intake: record it under the task and let `task-run` move the item to `waiting` and ask the user if that information becomes necessary for execution.
 
+Treat every user-provided screenshot or image attachment in the active `task-add` intake batch as evidence to preserve by default, even when the user does not mention screenshots or ask to keep them. Enumerate the attachments before writing the batch and associate them with tasks using message proximity, order, labels, and visible content. When the association is uncertain, preserve the image with the most plausible task and record that inference instead of dropping the evidence or requiring the user to repeat a preservation instruction. Skip an image only when the user explicitly opts out of storing that image or all screenshots.
+
+## Parallel intake analysis
+
+Split the intake batch and independent evidence clusters across the maximum useful number of read-only subagents. Each worker returns proposed task boundaries, confirmed evidence, screenshot associations, likely duplicate IDs, analysis, acceptance conditions, and retained uncertainty for its assigned subset. Use additional repository or contract investigation lanes when they are independent and materially improve task executability; do not ask several agents to draft the same item without a distinct purpose.
+
+The coordinator checks cross-batch duplicates and contradictions, owns every final task boundary, and is the sole writer of the dated Markdown and evidence assets through `task_pool.py`. Subagents must not add, claim, or process tasks directly, because concurrent analysis must not race task IDs, duplicate screenshots, or create conflicting status records.
+
 ## Dated Markdown pool
 
 The task document is the only persistent source of truth for status and ownership. Store tasks in `.cyh-flow/tasks/YYYY-MM-DD.md` using the target repository's local date at first intake; later status changes stay in that original document. Use stable IDs in the form `TASK-YYYYMMDD-NNN` and never reuse or renumber an ID.
@@ -25,7 +33,7 @@ Use [scripts/task_pool.py](../scripts/task_pool.py) from this Skill directory to
 python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks add --input <json-file-or-->
 ```
 
-Each `screenshots` entry may be a local image path or an object containing `path` and optional `label` and `source` fields. The script preserves the original bytes under `.cyh-flow/tasks/assets/<TASK-ID>/`, inserts a relative Markdown image link, and records its source and intake time in that task so later Agents can view the original evidence. Never recompress, edit, overwrite, or upload a screenshot unless the user separately asks. If an attachment is visible in the conversation but no readable local artifact is available, record that the screenshot could not yet be persisted and ask the user to attach or provide it; do not fabricate a replacement.
+Populate `screenshots` automatically from the intake attachments; do not wait for a separate user instruction. Each entry may be a local image path or an object containing `path` and optional `label` and `source` fields. The script preserves the original bytes under `.cyh-flow/tasks/assets/<TASK-ID>/`, inserts a relative Markdown image link, and records its source and intake time in that task so later Agents can view the original evidence. Never recompress, edit, overwrite, or upload a screenshot unless the user separately asks. If an attachment is visible in the conversation but no readable local artifact is available, record that the screenshot could not yet be persisted and ask the user to attach or provide it; do not fabricate a replacement.
 
 Do not manually synthesize IDs or rewrite existing task sections. If the same work is already present, report the existing ID rather than creating a duplicate; do not silently merge materially different screenshots or acceptance conditions.
 

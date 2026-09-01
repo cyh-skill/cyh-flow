@@ -16,6 +16,12 @@ Before creating a document:
 
 If multiple legacy documents already cover the same requirement, do not delete or silently merge them. Select and state the canonical document, record links and any unresolved conflicts there, then use only that document for new decisions unless the user or repository rules require consolidation.
 
+## Parallel investigation
+
+Before synthesis, decompose the requirement into independent read-only investigation lanes and use the maximum useful subagent concurrency. Split by real surfaces such as current behavior and call paths, data and external contracts, permissions and migration, tests and acceptance, or repository and platform variants; do not assign arbitrary duplicate summaries. Give every worker a bounded question and require concrete paths, symbols, evidence, assumptions, and unresolved gaps.
+
+All plan subagents remain read-only, including against the canonical requirement document. The coordinator inspects every lane, resolves contradictions against source evidence, and is the sole writer that creates or updates the canonical Markdown so parallel analysis cannot produce competing requirement records.
+
 ## Unified plan responsibilities
 
 Organize the document around the requirement's user flows, capabilities, rules, and decisions rather than around a Spec-versus-Plan phase boundary. For every material requirement or decision, connect the intended behavior to its implementation and evidence closely enough that readers do not have to reconcile two independent descriptions.

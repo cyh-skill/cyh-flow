@@ -2,6 +2,8 @@
 
 Use this mode for a read-only review of local changes, a commit, a branch, or a pull request. Run exactly four independent specialist review lanes, then give their reports to a fresh master reviewer for evidence-based rechecking and consolidation. The deliverable is verified findings or an evidence-bounded clean result, not a patch.
 
+The four specialists plus fresh master are this mode's required subagent decomposition. Use maximum available concurrency for the four lanes and start the master only after all four reach a terminal result; do not replace them with coordinator-only review, collapse roles, or add a writing agent.
+
 ## Review standard
 
 Review for the optimal implementation, not the fewest lines, files, or abstractions. An implementation is eligible to be called optimal only after it satisfies the real requirement, correctness invariants, security and data-integrity boundaries, compatibility contracts, and applicable accessibility or operational constraints. Among candidates that clear those hard gates, prefer the best evidenced fit for the repository: clear ownership, established architecture, readable control flow, testability, maintainability, appropriate performance, and controlled change scope.

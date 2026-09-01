@@ -10,6 +10,12 @@ Trace far enough through callers, state transitions, error paths, contracts, pla
 
 If the requested target is not concrete enough to repair responsibly, perform safe investigation and ask only for the decision that blocks progress. Do not guess product behavior or turn an ambiguous report into an open-ended convergence loop.
 
+## Parallel diagnosis
+
+Decompose every independent diagnostic and validation surface and use the maximum useful subagent concurrency. Useful read-only lanes include reproducing the failure, tracing ownership and callers, checking contracts and platform variants, locating regression coverage, and analyzing safe logs or runtime evidence. Give each worker one falsifiable question and require evidence, affected paths, uncertainties, and a repair direction rather than a generic summary.
+
+Keep exactly one repair writer, either the coordinator or one explicitly designated subagent. All other agents remain read-only against the shared repository; mutating checks run through the writer or in isolated non-conflicting environments. The writer verifies and integrates every result before editing, and no agent may expand this bounded repair into review or convergence unless the user selected that evidence or objective.
+
 ## Repair and validate
 
 Use one writer. Implement the smallest coherent root-cause repair that satisfies the real contract and repository conventions; fewer lines are only a tiebreaker between equally correct and verifiable solutions. Add or strengthen a regression test when the project normally tests the behavior or the defect could recur.
