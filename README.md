@@ -1,4 +1,4 @@
-# CYH Flow
+# cyh-flow
 
 面向 Codex 的跨项目软件交付工作流 Skill，用同一套授权边界处理方案设计、代码实现、无人值守构建与收敛、只读审查、一次性修复、Goal 驱动的持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
@@ -32,7 +32,7 @@
 
 `converge` 中的“finding 归零”是一个可验证停止条件，不是只重复代码 Review：finding 可以来自四路审查、自动化检查、模拟器或真机流程、Web 流程、运行时日志、安全、性能和业务验收。证据通道的决定权属于用户，你可以要求“只 Review”“只测指定浏览器流程”“模拟器 + Web”，也可以在过程中增加、替换或移除通道；Agent 必须把变更记录为 Goal 证据契约的修订，不能拿其他证据替代，也不能擅自增加阻塞通道。只有当你没有指定或明确把选择权交给 Agent 时，Agent 才会先声明一个与风险相称的最小组合，建议项只有经你接受后才成为完成门槛。任一用户必需通道中的受支持 finding、失败或重大未验证项都会阻止 Goal 完成，最终修复后必须重跑被影响的必需通道。它不表示对软件做“绝对无 bug”的不可证明承诺。
 
-顶层 `auto` 是这个证据选择规则的显式例外：调用 `$flow auto` 就表示把选择权交给 Agent，并要求“所有适用的 Review 和测试”，其中四路代码 Review 与主复查固定必需，同时从项目文档、CI 配置、包脚本、构建文件和影响面推导单元、集成、E2E、类型、Lint、Build、契约、迁移、浏览器、模拟器、设备、安全、性能等适用通道。适用性由变更影响和项目契约决定，不由当前环境能否执行决定；当前授权内可安全执行的通道直接跑，适用但缺少环境或权限的通道会让流水线保持未完成并说明阻塞，不能悄悄跳过，也不会为了跑全而自行 push 触发远端 CI、修改外部环境或碰生产。
+顶层 `auto` 是这个证据选择规则的显式例外：调用 `$cyh-flow auto` 就表示把选择权交给 Agent，并要求“所有适用的 Review 和测试”，其中四路代码 Review 与主复查固定必需，同时从项目文档、CI 配置、包脚本、构建文件和影响面推导单元、集成、E2E、类型、Lint、Build、契约、迁移、浏览器、模拟器、设备、安全、性能等适用通道。适用性由变更影响和项目契约决定，不由当前环境能否执行决定；当前授权内可安全执行的通道直接跑，适用但缺少环境或权限的通道会让流水线保持未完成并说明阻塞，不能悄悄跳过，也不会为了跑全而自行 push 触发远端 CI、修改外部环境或碰生产。
 
 ## 安装
 
@@ -52,48 +52,48 @@ https://github.com/cyh-skill/cyh-flow
 
 ```bash
 gh auth status
-gh repo clone cyh-skill/cyh-flow ~/.agents/skills/flow
+gh repo clone cyh-skill/cyh-flow ~/.agents/skills/cyh-flow
 ```
 
 更新已有安装：
 
 ```bash
-git -C ~/.agents/skills/flow pull --ff-only
+git -C ~/.agents/skills/cyh-flow pull --ff-only
 ```
 
 重新启动 Codex 会话后即可发现该 Skill。仓库目前主要按 Codex 的宿主行为和项目约定维护；其他 Agent 即使能读取 `SKILL.md`，命令、规则文件和工具能力也可能不同，不应直接假定完全兼容。
 
 ## 使用
 
-显式调用时使用 `$flow`，它是 Skill 名称，不是 shell 命令，也不是 `/` 开头的 Codex 宿主命令：
+显式调用时使用 `$cyh-flow`，它是 Skill 名称，不是 shell 命令，也不是 `/` 开头的 Codex 宿主命令：
 
 ```text
-$flow plan 给结账流程增加批量确认，先分析影响并出方案
+$cyh-flow plan 给结账流程增加批量确认，先分析影响并出方案
 
-$flow build 按 Issue #123 实现，并运行相关测试；不要提交或推送
+$cyh-flow build 按 Issue #123 实现，并运行相关测试；不要提交或推送
 
-$flow build auto 按 docs/plans/checkout.md 执行方案，由 AI 自动决策，记录问题和决定供我之后 Review
+$cyh-flow build auto 按 docs/plans/checkout.md 执行方案，由 AI 自动决策，记录问题和决定供我之后 Review
 
-$flow auto 按 docs/plans/checkout.md 无人值守完成实现，然后跑完所有适用 Review 和测试直到 finding 归零
+$cyh-flow auto 按 docs/plans/checkout.md 无人值守完成实现，然后跑完所有适用 Review 和测试直到 finding 归零
 
-$flow review PR #456，只做 review，不修改代码
+$cyh-flow review PR #456，只做 review，不修改代码
 
-$flow fix 修复 Review 发现的并发问题，并运行针对性回归测试
+$cyh-flow fix 修复 Review 发现的并发问题，并运行针对性回归测试
 
-$flow converge 持续检查结账流程直到 finding 归零；证据通道：四路 Review、iOS 模拟器、结账 Web 流程
+$cyh-flow converge 持续检查结账流程直到 finding 归零；证据通道：四路 Review、iOS 模拟器、结账 Web 流程
 
-$flow task-add 把下面这批 bug 和小改动分析后收进任务池
+$cyh-flow task-add 把下面这批 bug 和小改动分析后收进任务池
 
-$flow task-run 并发处理任务池里所有可执行事项，有问题集中问我
+$cyh-flow task-run 并发处理任务池里所有可执行事项，有问题集中问我
 ```
 
-CYH Flow 被设置为仅显式调用：普通的自然语言 plan、build、auto、review、fix、converge、task-add 或 task-run 请求不会自动加载该 Skill，只有用户输入 `$flow ...`，或在 Skill 选择器中主动选择它时才会进入这套流程。显式调用后，一次性修复明确问题属于 `fix`；只有明确要求 Goal、跨轮复查和修复、模拟器或 Web 验收循环，或“直到 finding 归零”时才进入 `converge`；只有顶层 `$flow auto` 会在不等待下一次用户指令的情况下把 `build auto` 与全证据 `converge` 串起来。若一句话混合了多个模式，CYH Flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理刚收录的事项，任何本地实现或修复也不会自动进入交付。
+cyh-flow 被设置为仅显式调用：普通的自然语言 plan、build、auto、review、fix、converge、task-add 或 task-run 请求不会自动加载该 Skill，只有用户输入 `$cyh-flow ...`，或在 Skill 选择器中主动选择它时才会进入这套流程。显式调用后，一次性修复明确问题属于 `fix`；只有明确要求 Goal、跨轮复查和修复、模拟器或 Web 验收循环，或“直到 finding 归零”时才进入 `converge`；只有顶层 `$cyh-flow auto` 会在不等待下一次用户指令的情况下把 `build auto` 与全证据 `converge` 串起来。若一句话混合了多个模式，cyh-flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理刚收录的事项，任何本地实现或修复也不会自动进入交付。
 
 Plan 阶段会把所有已经确认的需求决策写入同一份 Markdown 文档。这份文档不是并列维护 Spec 和 Plan 两块内容，而是把两者的职责融合起来，围绕用户流程、能力、规则和决策同时说明预期行为、边界与验收标准，以及对应的实现方式、影响范围、步骤和验证。先按 Issue、需求标识、标题和内容检索已有文档，同一需求始终原地更新，不拆成 `*-spec.md` 与 `*-plan.md`，也不因新会话、补充讨论或方案迭代创建日期版、`v2` 或其他副本。项目有既定目录和命名时沿用；没有时使用 `docs/plans/<requirement-slug>.md`。跨仓库需求也只维护一份主文档，其他位置只链接，不复制维护。
 
 Build 是纯执行模式，不会在实现中调用四路代码 Review 或主复查。普通 `build` 和 `build auto` 都执行用户要求的完整范围，都会先拆解依赖，并在文件所有权和运行环境不冲突的前提下尽可能并行调度多 Agent 做实现和验证；真正区别是普通 build 遇到第一个实质性意外问题或需要取舍的决策点就停止修改和派发并向用户汇报，而显式 auto 会把范围内决策权交给主 Agent，由它根据需求、仓库证据、既有模式、兼容性和风险选择最佳方案，再继续安全修复或推进不受影响的任务。auto 会建立 Goal，并把每个问题及自动决策写入 `.cyh-flow/build/<goal-slug>.md`：记录候选方案、最终选择、依据、影响、可逆性、相关文件和验证结果，默认标记为 `pending` 供人工 Review，不能冒充用户已经接受。该人工 Review 是执行后的审计交接，不会阻塞 build；若用户把人工接受明确设为 Goal 门槛则例外。范围扩大、外部写入、不可逆或高风险操作仍需另行授权；台账默认不提交，commit、push、PR 和部署也仍需单独明确授权。
 
-顶层 `$flow auto` 不是 `build auto` 的别名，而是无人值守的阶段编排：用 `.cyh-flow/auto/<goal-slug>.md` 记录唯一阶段事实，先创建并完成 Build Goal，再冻结实现结果并创建 Converge Goal；宿主一次只保留一个活动 Goal，不会同时创建父 Goal。Converge 阶段以一个互斥修复写者配合并行只读证据 Agent，任何修复都会使受影响的旧证据失效，最终必须在最新冻结目标上重跑。日常工程取舍无需人工确认，但范围变化、新权限、不可逆动作、外部写入、必需环境缺失或无法由仓库证据安全决定的产品问题仍会阻塞流水线。
+顶层 `$cyh-flow auto` 不是 `build auto` 的别名，而是无人值守的阶段编排：用 `.cyh-flow/auto/<goal-slug>.md` 记录唯一阶段事实，先创建并完成 Build Goal，再冻结实现结果并创建 Converge Goal；宿主一次只保留一个活动 Goal，不会同时创建父 Goal。Converge 阶段以一个互斥修复写者配合并行只读证据 Agent，任何修复都会使受影响的旧证据失效，最终必须在最新冻结目标上重跑。日常工程取舍无需人工确认，但范围变化、新权限、不可逆动作、外部写入、必需环境缺失或无法由仓库证据安全决定的产品问题仍会阻塞流水线。
 
 任务池是独立流水线：`task-add` 把一批 bug、小改动或其他事项分析后写入首次收录日期对应的 Markdown，并自动收集当前收录批次中的用户截图，不需要用户额外说“保留截图”；截图原样保存在 `.cyh-flow/tasks/assets/<TASK-ID>/` 并以内嵌相对链接展示，只有用户明确要求跳过时才不保存。`task-run` 不依赖主 Agent，每个 Agent 都用唯一身份对任务文档执行一次极短的加锁、重读和状态更新，只有把 `pending` 成功写成 `doing` 并留下领取人和时间后才能继续；在修改任何文件或共享运行时资源前，还必须重读全部 `doing` 任务并执行冲突闸门，冲突时由较早 claim（同时间则较小 task ID）继续，其他任务转为 `waiting`。锁不保存任何业务信息，Markdown 始终是状态和归属的唯一事实来源；`doing` 任务不会被自动抢占，完成后改成 `done`，需要用户决定时改成 `waiting` 并保留问题和处理历史。
 

@@ -1,9 +1,9 @@
 ---
-name: flow
-description: Route software-development work through CYH's cross-project plan, build, unattended build-and-converge, review, repair, convergence, or persistent task-pool workflows with explicit authorization boundaries. Use when the user invokes $flow to plan or implement a scoped change, run it unattended through all applicable reviews and tests, review read-only, repair or repeatedly recheck a problem, add bugs or small changes to a dated task pool with automatic screenshot preservation, or independently claim and process stored tasks. Do not use for general questions unrelated to software delivery.
+name: cyh-flow
+description: Route software-development work through cyh-flow's cross-project plan, build, unattended build-and-converge, review, repair, convergence, or persistent task-pool workflows with explicit authorization boundaries. Use when the user invokes $cyh-flow to plan or implement a scoped change, run it unattended through all applicable reviews and tests, review read-only, repair or repeatedly recheck a problem, add bugs or small changes to a dated task pool with automatic screenshot preservation, or independently claim and process stored tasks. Do not use for general questions unrelated to software delivery.
 ---
 
-# CYH Flow
+# cyh-flow
 
 Apply one consistent development workflow across repositories without hard-coding any product, organization, branch, or technology stack.
 
@@ -12,18 +12,18 @@ Apply one consistent development workflow across repositories without hard-codin
 The supported explicit forms are:
 
 ```text
-$flow plan <requirement or problem>
-$flow build <plan, issue, task, or requested change>
-$flow build auto <implementation-ready plan, issue, or requirement>
-$flow auto <implementation-ready plan, issue, or requirement>
-$flow review <working tree, branch, commit, or pull request>
-$flow fix <known bug, failing behavior, or review finding>
-$flow converge <objective and user-selected evidence lanes>
-$flow task-add <bugs, small changes, or follow-up work>
-$flow task-run [task ID or all eligible tasks]
+$cyh-flow plan <requirement or problem>
+$cyh-flow build <plan, issue, task, or requested change>
+$cyh-flow build auto <implementation-ready plan, issue, or requirement>
+$cyh-flow auto <implementation-ready plan, issue, or requirement>
+$cyh-flow review <working tree, branch, commit, or pull request>
+$cyh-flow fix <known bug, failing behavior, or review finding>
+$cyh-flow converge <objective and user-selected evidence lanes>
+$cyh-flow task-add <bugs, small changes, or follow-up work>
+$cyh-flow task-run [task ID or all eligible tasks]
 ```
 
-`$flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts `build auto`, `converge`, and the sequential build and convergence phases of top-level `auto` when available; never claim that `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, `/task-run`, or `/flow` was installed.
+`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts `build auto`, `converge`, and the sequential build and convergence phases of top-level `auto` when available; never claim that `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, `/task-run`, or `/cyh-flow` was installed.
 
 Use an explicit `plan`, `build`, `auto`, `review`, `fix`, `converge`, `task-add`, or `task-run` argument when present. Otherwise infer the mode conservatively:
 

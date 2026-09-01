@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Maintain CYH Flow's Markdown task pool with atomic document-backed claims."""
+"""Maintain cyh-flow's Markdown task pool with atomic document-backed claims."""
 
 from __future__ import annotations
 
