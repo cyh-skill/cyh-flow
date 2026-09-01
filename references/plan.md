@@ -1,10 +1,10 @@
 # Plan mode
 
-Use this mode to understand a requested change and maintain its Spec and implementation Plan together in one canonical Markdown document. Application code, configuration, Git state, and external systems stay read-only; creating or updating that requirement document is the only mutation authorized by entering plan mode.
+Use this mode to understand a requested change and maintain one unified requirement plan that covers both what the system must do and how the current system will implement and validate it. Application code, configuration, Git state, and external systems stay read-only; creating or updating that requirement document is the only mutation authorized by entering plan mode.
 
 ## Canonical requirement document
 
-Every requirement decision made during plan mode must be recorded in the canonical document, not left only in chat. The document must contain both the requirement Spec and its implementation Plan; do not create separately maintained `*-spec.md` and `*-plan.md` files for the same requirement. A decision includes confirmed scope and non-goals, chosen behavior or contract, accepted trade-offs, implementation direction, compatibility or migration treatment, and acceptance criteria. Keep proposals, assumptions, unresolved questions, and confirmed decisions visibly distinct so an unapproved option is never recorded as settled.
+Every requirement decision made during plan mode must be recorded in the canonical document, not left only in chat. The document must fulfill both specification and implementation-planning responsibilities as one integrated deliverable; do not model them as separately maintained artifacts or require separate `Spec` and `Plan` sections, and do not create `*-spec.md` and `*-plan.md` files for the same requirement. A decision includes confirmed scope and non-goals, chosen behavior or contract, accepted trade-offs, implementation direction, compatibility or migration treatment, and acceptance criteria. Keep proposals, assumptions, unresolved questions, and confirmed decisions visibly distinct so an unapproved option is never recorded as settled.
 
 Before creating a document:
 
@@ -16,15 +16,13 @@ Before creating a document:
 
 If multiple legacy documents already cover the same requirement, do not delete or silently merge them. Select and state the canonical document, record links and any unresolved conflicts there, then use only that document for new decisions unless the user or repository rules require consolidation.
 
-## Required Spec and Plan
+## Unified plan responsibilities
 
-Use recognizable `## Spec` and `## Plan` sections in the same file by default. A repository's established headings may be retained only when the two parts remain explicit and unambiguous.
+Organize the document around the requirement's user flows, capabilities, rules, and decisions rather than around a Spec-versus-Plan phase boundary. For every material requirement or decision, connect the intended behavior to its implementation and evidence closely enough that readers do not have to reconcile two independent descriptions.
 
-The Spec defines what must be true independently of a particular implementation. Record the intended outcome, users or actors, scope and non-goals, functional behavior and business rules, states and error or edge behavior, contracts and data or permission constraints, compatibility expectations, and observable acceptance criteria. Mark assumptions and open product questions separately from confirmed requirements.
+The unified plan must cover the responsibilities traditionally handled by a specification: intended outcome, users or actors, scope and non-goals, functional behavior and business rules, states and error or edge behavior, contracts and data or permission constraints, compatibility expectations, and observable acceptance criteria. It must also cover the responsibilities traditionally handled by an implementation plan: current implementation evidence, chosen design and rationale, reuse points, affected repositories and modules, ordered changes and dependencies, migration and rollback treatment, validation across applicable evidence lanes, live facts to refresh, and external actions requiring later authorization.
 
-The Plan defines how the current system will satisfy that Spec. Record current implementation evidence, the chosen design and rationale, reuse points, affected repositories and modules, ordered implementation steps and dependencies, contract or schema migration and rollback treatment, validation across the applicable evidence lanes, live facts to refresh, and external actions requiring later authorization.
-
-Keep a decision log with status and rationale in the same document, either shared or inside the relevant section. Write the Spec before finalizing the Plan, derive Plan steps from explicit Spec requirements, and update both sections together when a decision changes. Before handoff, check that every confirmed Spec requirement maps to implementation and validation coverage in the Plan, with no unexplained Plan work outside the Spec.
+Use repository-appropriate headings and keep a decision log with status and rationale in the same document. When a requirement decision changes, update its behavior, implementation impact, and acceptance coverage together. Before handoff, verify that every confirmed behavior has an implementation and validation path, and that no proposed work lacks a requirement rationale.
 
 ## Investigation
 
@@ -53,4 +51,4 @@ Write each confirmed decision and material plan revision to the canonical docume
 
 ## Handoff
 
-End with the canonical document path, the readiness of its Spec and Plan, and an implementation-ready summary of what was added or changed there. If no safe document write was possible, state the blocker and provide the exact intended path and content rather than pretending it was persisted. If the user asks to continue, treat the Spec as the behavior source of truth and the Plan as the implementation handoff, switch to build mode, and read `references/build.md`; otherwise stop after the plan.
+End with the canonical document path, its readiness as a unified requirement plan, and an implementation-ready summary of what was added or changed there. If no safe document write was possible, state the blocker and provide the exact intended path and content rather than pretending it was persisted. If the user asks to continue, treat the same document as the source of truth for both required behavior and implementation, switch to build mode, and read `references/build.md`; otherwise stop after the plan.

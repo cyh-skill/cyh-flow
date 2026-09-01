@@ -22,7 +22,7 @@ $cyh-flow fix <bug, failing behavior, branch, pull request, or repair objective>
 
 Use an explicit `plan`, `build`, `review`, or `fix` argument when present. Otherwise infer the mode conservatively:
 
-- Requests to investigate, understand, map, propose, or plan are `plan`; application code and external state stay read-only, while the requirement's canonical Markdown decision document containing both Spec and Plan is created or updated.
+- Requests to investigate, understand, map, propose, or plan are `plan`; application code and external state stay read-only, while one canonical requirement plan that fulfills both specification and implementation-planning responsibilities is created or updated.
 - Requests to implement, change, fix a known issue once, or build are `build` and authorize scoped local file edits only.
 - Requests to review, re-review, audit a diff, or inspect a PR are `review` and use four independent read-only specialist lanes followed by a fresh master recheck.
 - Requests that explicitly require a Goal, adversarial agents, repeated review and repair, or continuing until supported bugs reach zero are `fix` and authorize the scoped local repair loop plus read-only subagent review.
