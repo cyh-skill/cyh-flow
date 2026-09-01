@@ -1,7 +1,7 @@
 interface:
   display_name: "Flow"
-  short_description: "Plan, build, review, converge, and run a task pool"
-  default_prompt: "Use $flow with maximum useful subagent decomposition in every mode: plan; build or build auto with recorded AI decisions; four-lens review; fix or converge; task-add with automatic screenshot preservation; or independently claim and process stored work with task-run."
+  short_description: "Plan, build, auto-converge, review, and run tasks"
+  default_prompt: "Use $flow with maximum useful subagent decomposition to plan; build or build auto with recorded AI decisions; run top-level auto through build and all applicable review and test convergence; perform four-lens review; fix or converge; preserve task-add screenshots; or claim and process stored work with task-run."
 
 policy:
   allow_implicit_invocation: false
