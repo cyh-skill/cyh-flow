@@ -4,6 +4,7 @@ import base64
 import errno
 import importlib.util
 import json
+import os
 import stat
 import subprocess
 import sys
@@ -45,12 +46,18 @@ class TaskPoolTest(unittest.TestCase):
     def run_cli(
         self, *arguments: str, payload: object | None = None
     ) -> subprocess.CompletedProcess[str]:
+        environment = os.environ.copy()
+        environment["PYTHONIOENCODING"] = "cp1252"
         return subprocess.run(
             [sys.executable, str(SCRIPT), "--pool", str(self.pool), *arguments],
             input=json.dumps(payload, ensure_ascii=False) if payload is not None else None,
             text=True,
+            encoding="utf-8",
+            errors="strict",
             capture_output=True,
             check=False,
+            env=environment,
+            timeout=30,
         )
 
     def add_tasks(self, count: int) -> list[str]:
@@ -87,6 +94,7 @@ class TaskPoolTest(unittest.TestCase):
         preserved = self.pool / "assets" / task_id / "001.png"
         self.assertEqual(preserved.read_bytes(), ONE_PIXEL_PNG)
         document = (self.pool / "2026-09-01.md").read_text(encoding="utf-8")
+        self.assertIn(f"## {task_id} · 保留截图", document)
         self.assertIn(f"![原始界面](assets/{task_id}/001.png)", document)
         self.assertIn("- 截图来源：用户附件；收录时间：", document)
         self.assertIn("- 状态：pending", document)
@@ -160,7 +168,7 @@ class TaskPoolTest(unittest.TestCase):
         )
         lock_path = self.root / "unix.lock"
 
-        with lock_path.open("a+", encoding="utf-8") as lock_file:
+        with lock_path.open("a+b", buffering=0) as lock_file:
             with mock.patch.object(TASK_POOL, "_lock_backend_name", return_value="unix"):
                 with mock.patch.object(TASK_POOL, "_load_lock_module", return_value=fake_fcntl):
                     with TASK_POOL._exclusive_file_lock(lock_file):
@@ -189,7 +197,7 @@ class TaskPoolTest(unittest.TestCase):
         fake_msvcrt = SimpleNamespace(LK_NBLCK=11, LK_UNLCK=12, locking=locking)
         lock_path = self.root / "windows.lock"
 
-        with lock_path.open("a+", encoding="utf-8") as lock_file:
+        with lock_path.open("a+b", buffering=0) as lock_file:
             with mock.patch.object(TASK_POOL, "_lock_backend_name", return_value="windows"):
                 with mock.patch.object(
                     TASK_POOL, "_load_lock_module", return_value=fake_msvcrt
@@ -211,6 +219,21 @@ class TaskPoolTest(unittest.TestCase):
                 (descriptor, fake_msvcrt.LK_UNLCK, 1),
             ],
         )
+
+    def test_windows_lock_backend_times_out_instead_of_waiting_forever(self) -> None:
+        def locking(descriptor: int, operation: int, size: int) -> None:
+            del descriptor, operation, size
+            raise OSError(errno.EACCES, "lock is held")
+
+        fake_msvcrt = SimpleNamespace(LK_NBLCK=11, locking=locking)
+        lock_path = self.root / "windows-timeout.lock"
+
+        with lock_path.open("a+b", buffering=0) as lock_file:
+            with mock.patch.object(
+                TASK_POOL.time, "monotonic", side_effect=(100.0, 131.0)
+            ):
+                with self.assertRaisesRegex(TASK_POOL.PoolError, "timed out after 30s"):
+                    TASK_POOL._acquire_windows_lock(lock_file, fake_msvcrt)
 
     def test_claim_preserves_backslashes_in_agent_identity(self) -> None:
         task_id = self.add_tasks(1)[0]

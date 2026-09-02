@@ -92,24 +92,32 @@ def _load_lock_module(name: str) -> Any:
 def _ensure_windows_lock_byte(lock_file: Any) -> None:
     lock_file.seek(0, os.SEEK_END)
     if lock_file.tell() == 0:
-        lock_file.write("\0")
+        lock_file.write(b"\0")
         lock_file.flush()
         os.fsync(lock_file.fileno())
     lock_file.seek(0)
 
 
-def _acquire_windows_lock(lock_file: Any, msvcrt: Any) -> None:
+def _acquire_windows_lock(
+    lock_file: Any, msvcrt: Any, *, timeout_seconds: float = 30.0
+) -> None:
     _ensure_windows_lock_byte(lock_file)
     retryable = {errno.EACCES, errno.EAGAIN}
     if hasattr(errno, "EDEADLK"):
         retryable.add(errno.EDEADLK)
+    deadline = time.monotonic() + timeout_seconds
     while True:
+        lock_file.seek(0)
         try:
             msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
             return
         except OSError as error:
             if error.errno not in retryable:
                 raise
+            if time.monotonic() >= deadline:
+                raise PoolError(
+                    f"timed out after {timeout_seconds:g}s waiting for the task-pool lock"
+                ) from error
             time.sleep(0.05)
 
 
@@ -141,7 +149,9 @@ def pool_lock(pool: Path) -> Iterator[None]:
         resolved = os.path.normcase(resolved)
     identity = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:24]
     lock_path = Path(tempfile.gettempdir()) / f"cyh-flow-task-pool-{identity}.lock"
-    with lock_path.open("a+", encoding="utf-8") as lock_file:
+    flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0)
+    descriptor = os.open(lock_path, flags, 0o600)
+    with os.fdopen(descriptor, "r+b", buffering=0) as lock_file:
         with _exclusive_file_lock(lock_file):
             yield
 
@@ -597,7 +607,15 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def configure_utf8_stdio() -> None:
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="strict")
+
+
 def main() -> int:
+    configure_utf8_stdio()
     parser = build_parser()
     args = parser.parse_args()
     try:
