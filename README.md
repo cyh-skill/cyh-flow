@@ -64,7 +64,7 @@ git -C ~/.agents/skills/cyh-flow pull --ff-only
 
 ### Claude Code 插件安装（推荐）
 
-仓库提供 Claude Code 插件清单和一个显式调用 wrapper，可直接在 Claude Code 中添加 marketplace 并安装插件：
+仓库提供 Claude Code 插件清单，插件直接加载与 Codex 共用的根 `SKILL.md`，可在 Claude Code 中添加 marketplace 并安装：
 
 ```text
 /plugin marketplace add cyh-skill/cyh-flow
@@ -81,7 +81,7 @@ git -C ~/.agents/skills/cyh-flow pull --ff-only
 gh repo clone cyh-skill/cyh-flow ~/.claude/skills/cyh-flow
 ```
 
-个人 Skill 的调用名是 `/cyh-flow`。插件 wrapper 通过 `disable-model-invocation: true` 在宿主层强制仅用户调用；个人 Skill 仍受根 `SKILL.md` 的显式调用契约约束，但若需要宿主级硬限制，应优先使用插件安装。
+个人 Skill 的调用名是 `/cyh-flow`。两个宿主共享根 `SKILL.md`：Codex 通过 `agents/openai.yaml` 在宿主层禁止隐式调用，Claude Code 读取同一入口中的显式调用契约和 `$ARGUMENTS`。为了保持根 Skill 符合跨宿主 Agent Skills 格式，不在其中加入 Claude 专用 frontmatter。
 
 ## 使用
 
@@ -117,7 +117,7 @@ Claude Code 插件安装后使用规范命名空间，个人 Skill 安装则使�
 /cyh-flow review PR #456，只做 review，不修改代码
 ```
 
-cyh-flow 被设置为仅显式调用：普通的自然语言 plan、build、auto、review、fix、converge、task-add 或 task-run 请求不会自动进入这套流程。Codex 需要用户输入 `$cyh-flow ...` 或主动选择该 Skill；Claude Code 插件 wrapper 使用 `disable-model-invocation: true`，需要用户输入 `/cyh-flow:cyh-flow ...`。显式调用后，一次性修复明确问题属于 `fix`；只有明确要求跨轮复查和修复、模拟器或 Web 验收循环，或“直到 finding 归零”时才进入 `converge`；只有顶层 `cyh-flow auto` 会把 `build auto` 与全证据 `converge` 串起来。若一句话混合了多个模式，cyh-flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理刚收录的事项，任何本地实现或修复也不会自动进入交付。
+cyh-flow 的契约是仅显式调用：普通的自然语言 plan、build、auto、review、fix、converge、task-add 或 task-run 请求不应自动进入这套流程。Codex 需要用户输入 `$cyh-flow ...` 或主动选择该 Skill，并由 `agents/openai.yaml` 强制执行；Claude Code 插件直接加载同一个根 `SKILL.md`，用户以 `/cyh-flow:cyh-flow ...` 调用。显式调用后，一次性修复明确问题属于 `fix`；只有明确要求跨轮复查和修复、模拟器或 Web 验收循环，或“直到 finding 归零”时才进入 `converge`；只有顶层 `cyh-flow auto` 会把 `build auto` 与全证据 `converge` 串起来。若一句话混合了多个模式，cyh-flow 会保留每个阶段的权限边界：方案不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理刚收录的事项，任何本地实现或修复也不会自动进入交付。
 
 ## 双宿主能力映射
 
@@ -164,8 +164,6 @@ cyh-flow/
 |   `-- marketplace.json     # 可直接添加的单插件 marketplace
 |-- agents/
 |   `-- openai.yaml          # Codex UI 展示与默认提示词
-|-- claude/skills/cyh-flow/
-|   `-- SKILL.md             # Claude 显式调用 wrapper 与宿主降级入口
 |-- scripts/
 |   `-- task_pool.py         # Markdown 任务入池、原子领取与状态更新
 |-- tests/
@@ -183,7 +181,7 @@ cyh-flow/
     `-- task-run.md          # 无主调度的原子领取与自主处理
 ```
 
-`SKILL.md` 是两端唯一规范入口，每次先路由到一个主模式 reference，避免把无关流程同时载入上下文；Claude wrapper 只适配调用和宿主能力，不复制八种模式。普通 `fix` 或 `converge` 只有在用户证据通道明确要求四路 Review 时才继续按需读取 Review 协议，而顶层 `auto` 按阶段顺序读取 Build、Converge 和 Review 协议。调整模式规则时，应把共享约束留在 `SKILL.md`，把仅属于单一模式的细节留在对应 reference，并使用官方 `skill-creator` 校验根 Skill、用测试校验两端 manifest、入口和相对链接；有真实 Claude Code CLI 的环境还应运行 `claude plugin validate . --strict`。
+`SKILL.md` 是两端唯一规范入口，Claude 插件清单直接指向仓库根目录；每次先路由到一个主模式 reference，避免把无关流程同时载入上下文。普通 `fix` 或 `converge` 只有在用户证据通道明确要求四路 Review 时才继续按需读取 Review 协议，而顶层 `auto` 按阶段顺序读取 Build、Converge 和 Review 协议。调整模式规则时，应把共享约束留在 `SKILL.md`，把仅属于单一模式的细节留在对应 reference，并使用官方 `skill-creator` 校验根 Skill、用测试校验两端 manifest、入口和相对链接；有真实 Claude Code CLI 的环境还应运行 `claude plugin validate . --strict`。
 
 ## 可见性与授权
 

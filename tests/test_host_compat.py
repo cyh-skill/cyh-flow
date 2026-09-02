@@ -27,7 +27,7 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 class HostCompatibilityTests(unittest.TestCase):
-    def test_claude_plugin_manifest_points_to_wrapper(self) -> None:
+    def test_claude_plugin_manifest_points_to_canonical_skill(self) -> None:
         manifest_path = ROOT / ".claude-plugin" / "plugin.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
@@ -37,7 +37,7 @@ class HostCompatibilityTests(unittest.TestCase):
             manifest["$schema"],
             "https://json.schemastore.org/claude-code-plugin-manifest.json",
         )
-        self.assertEqual(manifest["skills"], ["./claude/skills/cyh-flow"])
+        self.assertEqual(manifest["skills"], ["./"])
         skill_path = ROOT / manifest["skills"][0]
         self.assertTrue(skill_path.is_dir())
         self.assertTrue((skill_path / "SKILL.md").is_file())
@@ -67,16 +67,15 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("[MIT License](LICENSE)", readme)
         self.assertNotIn("尚未附带开源许可证", readme)
 
-    def test_claude_wrapper_is_explicit_and_loads_canonical_skill(self) -> None:
-        wrapper = ROOT / "claude" / "skills" / "cyh-flow" / "SKILL.md"
-        metadata = frontmatter(wrapper)
-        text = wrapper.read_text(encoding="utf-8")
+    def test_canonical_skill_is_shared_by_both_hosts(self) -> None:
+        canonical = ROOT / "SKILL.md"
+        metadata = frontmatter(canonical)
+        text = canonical.read_text(encoding="utf-8")
 
         self.assertEqual(metadata["name"], "cyh-flow")
-        self.assertEqual(metadata["disable-model-invocation"], "true")
+        self.assertIn("Use only when the user explicitly invokes", metadata["description"])
         self.assertIn("$ARGUMENTS", text)
-        self.assertIn("${CLAUDE_PLUGIN_ROOT}/SKILL.md", text)
-        self.assertTrue((wrapper.parent / "../../../SKILL.md").resolve().is_file())
+        self.assertTrue(canonical.is_file())
 
     def test_codex_and_claude_explicit_entrypoints_remain_documented(self) -> None:
         root_skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")

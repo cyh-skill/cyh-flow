@@ -11,6 +11,8 @@ Apply one consistent development workflow across repositories without hard-codin
 
 Codex is the priority host and invokes this Skill as `$cyh-flow`. Claude Code invokes the personal Skill as `/cyh-flow`; a marketplace/plugin install uses the canonical namespaced form `/cyh-flow:cyh-flow`. Do not promise a bare alias for the plugin form. These are host UI invocations, not shell commands. Use the matching prefix in the forms below:
 
+Treat the active user request as the explicit invocation input. In Claude Code, appended invocation arguments are: `$ARGUMENTS`. If the current host does not expand that placeholder, use the user's request directly.
+
 The supported explicit forms are:
 
 ```text
