@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SKILL_ROOT = ROOT / "skills" / "flow"
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -37,10 +38,11 @@ class HostCompatibilityTests(unittest.TestCase):
             manifest["$schema"],
             "https://json.schemastore.org/claude-code-plugin-manifest.json",
         )
-        self.assertEqual(manifest["skills"], ["./"])
+        self.assertEqual(manifest["skills"], ["./skills/flow"])
         skill_path = ROOT / manifest["skills"][0]
         self.assertTrue(skill_path.is_dir())
         self.assertTrue((skill_path / "SKILL.md").is_file())
+        self.assertFalse((skill_path / ".claude-plugin").exists())
 
     def test_marketplace_entry_matches_plugin(self) -> None:
         marketplace = json.loads(
@@ -68,41 +70,50 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertNotIn("尚未附带开源许可证", readme)
 
     def test_canonical_skill_is_shared_by_both_hosts(self) -> None:
-        canonical = ROOT / "SKILL.md"
+        canonical = SKILL_ROOT / "SKILL.md"
         metadata = frontmatter(canonical)
         text = canonical.read_text(encoding="utf-8")
 
-        self.assertEqual(metadata["name"], "cyh-flow")
+        self.assertEqual(metadata["name"], "flow")
         self.assertIn("Use only when the user explicitly invokes", metadata["description"])
         self.assertIn("$ARGUMENTS", text)
         self.assertTrue(canonical.is_file())
 
     def test_codex_and_claude_explicit_entrypoints_remain_documented(self) -> None:
-        root_skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        root_skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        openai = (ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
+        openai = (SKILL_ROOT / "agents" / "openai.yaml").read_text(
+            encoding="utf-8"
+        )
 
-        self.assertIn("$cyh-flow", root_skill)
-        self.assertIn("/cyh-flow:cyh-flow", root_skill)
-        self.assertIn("$cyh-flow", readme)
-        self.assertIn("/cyh-flow:cyh-flow", readme)
-        self.assertIn("/cyh-flow", readme)
+        self.assertIn("$flow", root_skill)
+        self.assertIn("/cyh-flow:flow", root_skill)
+        self.assertIn("$flow", readme)
+        self.assertIn("/cyh-flow:flow", readme)
+        self.assertIn("/flow", readme)
+        self.assertNotIn("$cyh-flow", root_skill)
+        self.assertNotIn("/cyh-flow:cyh-flow", root_skill)
+        self.assertIn('display_name: "flow"', openai)
+        self.assertIn("Use $flow", openai)
         self.assertIn("allow_implicit_invocation: false", openai)
 
     def test_host_specific_fallback_contracts_are_present(self) -> None:
-        root_skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        plan = (ROOT / "references" / "plan.md").read_text(encoding="utf-8")
-        review = (ROOT / "references" / "review.md").read_text(encoding="utf-8")
-        review_auto = (ROOT / "references" / "review-auto.md").read_text(
+        root_skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        plan = (SKILL_ROOT / "references" / "plan.md").read_text(encoding="utf-8")
+        review = (SKILL_ROOT / "references" / "review.md").read_text(encoding="utf-8")
+        review_auto = (SKILL_ROOT / "references" / "review-auto.md").read_text(
             encoding="utf-8"
         )
-        review_watcher = ROOT / "scripts" / "review_watch.py"
+        review_watcher = SKILL_ROOT / "scripts" / "review_watch.py"
+        review_prepare = SKILL_ROOT / "scripts" / "review_prepare.py"
+        review_artifacts = SKILL_ROOT / "scripts" / "review_artifacts.py"
+        review_publish = SKILL_ROOT / "scripts" / "review_publish.py"
 
         self.assertIn("not the Codex create/get/update Goal API", root_skill)
         self.assertIn("experimental agent teams", root_skill)
         self.assertIn("editing-capable permission mode", plan)
         self.assertIn("without enabled persistent mailbox delivery", review)
-        self.assertIn("<cyh-flow> review auto", root_skill)
+        self.assertIn("<flow> review auto", root_skill)
         self.assertIn("review-auto.md", review)
         self.assertIn("latest completed review cycle is clean", review_auto)
         self.assertIn("scripts/review_watch.py", review_auto)
@@ -110,19 +121,48 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("integration-reliability", review)
         self.assertNotIn("performance-engineer", review)
         self.assertTrue(
-            (ROOT / "references" / "review" / "integration-reviewer.md").is_file()
+            (SKILL_ROOT / "references" / "review" / "integration-reviewer.md").is_file()
         )
         self.assertFalse(
-            (ROOT / "references" / "review" / "performance-reviewer.md").exists()
+            (SKILL_ROOT / "references" / "review" / "performance-reviewer.md").exists()
         )
         self.assertNotIn("--watch-checks", review_auto)
         self.assertNotIn(
             "--watch-checks", review_watcher.read_text(encoding="utf-8")
         )
         self.assertTrue(review_watcher.is_file())
+        self.assertTrue(review_prepare.is_file())
+        self.assertTrue(review_artifacts.is_file())
+        self.assertTrue(review_publish.is_file())
+        self.assertIn("review_prepare.py", review)
+        self.assertIn("review_artifacts.py", review)
+        self.assertIn("review_publish.py", review)
+        self.assertIn("ponytail-complexity", review)
+        self.assertIn("do not block clean", review)
         self.assertIn("Never merge a PR", review_auto)
-        for path in (ROOT / "references").rglob("*.md"):
-            self.assertNotIn("$cyh-flow", path.read_text(encoding="utf-8"), path)
+        for path in (SKILL_ROOT / "references").rglob("*.md"):
+            self.assertNotIn("$flow", path.read_text(encoding="utf-8"), path)
+
+    def test_review_method_provenance_stays_out_of_runtime_context(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        runtime_paths = [
+            SKILL_ROOT / "references" / "review.md",
+            *(SKILL_ROOT / "references" / "review").glob("*.md"),
+        ]
+        runtime_text = "\n".join(
+            path.read_text(encoding="utf-8") for path in runtime_paths
+        )
+        source_urls = (
+            "https://github.com/openai/codex/blob/81de4f251cfdaf32ecb85e2160ebfc11a562d44b/codex-rs/prompts/templates/review/rubric.md",
+            "https://github.com/DietrichGebert/ponytail/blob/bd6176a9b33ab72594ff82e6f34f17b085f25565/skills/ponytail-review/SKILL.md",
+            "https://github.com/trailofbits/skills/blob/4b1b74b181e81cbcaa8d3b68a0e4ed867165b972/plugins/differential-review/skills/differential-review/SKILL.md",
+            "https://github.com/wshobson/agents/blob/8df77ecd46ae10c3373e6a4b91b29859ef6b560d/plugins/comprehensive-review/agents/code-reviewer.md",
+        )
+
+        for source_url in source_urls:
+            self.assertIn(source_url, readme)
+            self.assertNotIn(source_url, runtime_text)
+        self.assertNotIn('"source": "upstream source URL"', runtime_text)
 
     def test_all_relative_markdown_links_resolve(self) -> None:
         link_pattern = re.compile(r"\[[^\]]*\]\(([^)]+)\)")

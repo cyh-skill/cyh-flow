@@ -9,7 +9,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from scripts import review_watch
+from skills.flow.scripts import review_watch
 
 
 def cursor(*, head: str = "aaa", comments: dict | None = None) -> dict:

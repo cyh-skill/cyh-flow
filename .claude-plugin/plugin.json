@@ -10,5 +10,5 @@
   "repository": "https://github.com/cyh-skill/cyh-flow",
   "license": "MIT",
   "keywords": ["software-delivery", "planning", "code-review", "subagents", "workflow"],
-  "skills": ["./"]
+  "skills": ["./skills/flow"]
 }

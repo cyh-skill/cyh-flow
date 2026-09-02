@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow"
-  short_description: "Plan, build, auto-converge, review/watch PRs, and run tasks"
-  default_prompt: "Use $cyh-flow to handle this software-delivery task in the appropriate mode while preserving explicit authorization boundaries."
-
-policy:
-  allow_implicit_invocation: false
