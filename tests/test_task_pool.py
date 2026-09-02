@@ -19,7 +19,7 @@ from unittest import mock
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "skills"
-    / "flow"
+    / "cyh-flow"
     / "scripts"
     / "task_pool.py"
 )

@@ -1,6 +1,6 @@
 # Review auto supplement
 
-Use this supplement only for the exact form `<flow> review auto <GitHub PR>`. It turns the ordinary review protocol into an unattended, event-driven loop. It does not change the reviewers, evidence standard, or read-only code boundary.
+Use this supplement only for the exact form `<cyh-flow> review auto <GitHub PR>`. It turns the ordinary review protocol into an unattended, event-driven loop. It does not change the reviewers, evidence standard, or read-only code boundary.
 
 ## Preconditions and Goal
 

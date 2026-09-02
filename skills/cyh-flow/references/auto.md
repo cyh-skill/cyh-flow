@@ -1,6 +1,6 @@
 # Auto mode
 
-Use top-level `<flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, records the resulting working target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
+Use top-level `<cyh-flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, records the resulting working target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
 
 This is a phase orchestrator, not a third implementation or review protocol. Read [build.md](build.md) for phase one, then read [converge.md](converge.md) and [review.md](review.md) only after phase one completes. Do not run build and convergence concurrently or blur their completion gates.
 
@@ -12,7 +12,7 @@ Record the objective, source of truth, repositories, starting revisions, non-goa
 
 Maintain only one active Goal under the host mapping, so do not create a simultaneous parent Goal. Codex can sequence its native Goal API; Claude Code may use one user-activated session `/goal`, Task records for the two phases, and the orchestration ledger, but must not claim two independently addressable native Goals or replace an unrelated active `/goal`. Sequence exactly two logical phase Goals:
 
-1. Create or resume the build Goal under the rules for explicit `<flow> build auto`. Record it as `build` in the orchestration ledger and execute it until its own completion gate is satisfied. A blocked or incomplete build stops the pipeline; do not start convergence.
+1. Create or resume the build Goal under the rules for explicit `<cyh-flow> build auto`. Record it as `build` in the orchestration ledger and execute it until its own completion gate is satisfied. A blocked or incomplete build stops the pipeline; do not start convergence.
 2. Inspect and record the complete post-build target, mark the build phase complete in the orchestration ledger, and only then complete the build Goal.
 3. Create or resume a separate convergence Goal over that working target. Record it as `converge`, derive the mandatory evidence matrix below, and execute the converge repair-and-recheck loop until its own completion gate is satisfied.
 4. Mark the orchestration ledger complete only after both Goals completed against the recorded targets and the final convergence evidence covers every applicable lane.

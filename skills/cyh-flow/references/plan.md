@@ -2,7 +2,7 @@
 
 Use this mode to understand a requested change and maintain one unified requirement plan that covers both what the system must do and how the current system will implement and validate it. Application code, configuration, Git state, and external systems stay read-only; creating or updating that requirement document is the only mutation authorized by entering plan mode.
 
-Claude Code's native plan permission mode may be used for the read-only investigation portion, but it is not a complete implementation of `flow plan`: switch back to an editing-capable permission mode before the coordinator creates or updates the canonical requirement document. Do not weaken the required document handoff or claim it was persisted while the host is still enforcing read-only access.
+Claude Code's native plan permission mode may be used for the read-only investigation portion, but it is not a complete implementation of `cyh-flow plan`: switch back to an editing-capable permission mode before the coordinator creates or updates the canonical requirement document. Do not weaken the required document handoff or claim it was persisted while the host is still enforcing read-only access.
 
 ## Canonical requirement document
 

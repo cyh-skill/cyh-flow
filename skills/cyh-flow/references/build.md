@@ -6,10 +6,10 @@ Build is an execution workflow, not a review workflow. Implement, test, build, a
 
 ## Modes
 
-- `<flow> build <source>` executes the concrete implementation scope with the maximum useful subagent concurrency, but stops at the first material unexpected problem instead of diagnosing, repairing, or continuing past it autonomously. It does not create a Goal or issue ledger.
-- `<flow> build auto <source>` executes the same kind of implementation scope and parallel task graph, but creates a Goal using the host mapping in the canonical Skill, uses the coordinator's best evidence-grounded judgment to make in-scope decisions, records every intermediate problem and automatic decision in a local ledger for later human review, and keeps resolving problems or running unaffected dependency-ready work without pausing between safe steps. The `auto` invocation itself delegates these in-scope decisions and continuation; it does not authorize external mutations.
+- `<cyh-flow> build <source>` executes the concrete implementation scope with the maximum useful subagent concurrency, but stops at the first material unexpected problem instead of diagnosing, repairing, or continuing past it autonomously. It does not create a Goal or issue ledger.
+- `<cyh-flow> build auto <source>` executes the same kind of implementation scope and parallel task graph, but creates a Goal using the host mapping in the canonical Skill, uses the coordinator's best evidence-grounded judgment to make in-scope decisions, records every intermediate problem and automatic decision in a local ledger for later human review, and keeps resolving problems or running unaffected dependency-ready work without pausing between safe steps. The `auto` invocation itself delegates these in-scope decisions and continuation; it does not authorize external mutations.
 
-Treat only the explicit first argument `auto` after `build` as auto mode. Do not infer auto mode merely because the request is large, asks for speed, or contains several tasks. Top-level `<flow> auto` is a separate full-pipeline mode whose reference explicitly enters this build-auto phase before convergence; it is not an inferred alias for `<flow> build auto`.
+Treat only the explicit first argument `auto` after `build` as auto mode. Do not infer auto mode merely because the request is large, asks for speed, or contains several tasks. Top-level `<cyh-flow> auto` is a separate full-pipeline mode whose reference explicitly enters this build-auto phase before convergence; it is not an inferred alias for `<cyh-flow> build auto`.
 
 ## Before editing
 

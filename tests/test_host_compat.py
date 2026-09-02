@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / "skills" / "flow"
+SKILL_ROOT = ROOT / "skills" / "cyh-flow"
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -38,7 +38,7 @@ class HostCompatibilityTests(unittest.TestCase):
             manifest["$schema"],
             "https://json.schemastore.org/claude-code-plugin-manifest.json",
         )
-        self.assertEqual(manifest["skills"], ["./skills/flow"])
+        self.assertEqual(manifest["skills"], ["./skills/cyh-flow"])
         skill_path = ROOT / manifest["skills"][0]
         self.assertTrue(skill_path.is_dir())
         self.assertTrue((skill_path / "SKILL.md").is_file())
@@ -74,7 +74,7 @@ class HostCompatibilityTests(unittest.TestCase):
         metadata = frontmatter(canonical)
         text = canonical.read_text(encoding="utf-8")
 
-        self.assertEqual(metadata["name"], "flow")
+        self.assertEqual(metadata["name"], "cyh-flow")
         self.assertIn("Use only when the user explicitly invokes", metadata["description"])
         self.assertIn("$ARGUMENTS", text)
         self.assertTrue(canonical.is_file())
@@ -86,15 +86,15 @@ class HostCompatibilityTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("$flow", root_skill)
-        self.assertIn("/cyh-flow:flow", root_skill)
-        self.assertIn("$flow", readme)
-        self.assertIn("/cyh-flow:flow", readme)
-        self.assertIn("/flow", readme)
-        self.assertNotIn("$cyh-flow", root_skill)
-        self.assertNotIn("/cyh-flow:cyh-flow", root_skill)
-        self.assertIn('display_name: "flow"', openai)
-        self.assertIn("Use $flow", openai)
+        self.assertIn("$cyh-flow", root_skill)
+        self.assertIn("/cyh-flow:cyh-flow", root_skill)
+        self.assertIn("$cyh-flow", readme)
+        self.assertIn("/cyh-flow:cyh-flow", readme)
+        self.assertIn("/cyh-flow", readme)
+        self.assertNotIn("$flow", root_skill)
+        self.assertNotIn("/cyh-flow:flow", root_skill)
+        self.assertIn('display_name: "cyh-flow"', openai)
+        self.assertIn("Use $cyh-flow", openai)
         self.assertIn("allow_implicit_invocation: false", openai)
 
     def test_host_specific_fallback_contracts_are_present(self) -> None:
@@ -113,7 +113,7 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("experimental agent teams", root_skill)
         self.assertIn("editing-capable permission mode", plan)
         self.assertIn("without enabled persistent mailbox delivery", review)
-        self.assertIn("<flow> review auto", root_skill)
+        self.assertIn("<cyh-flow> review auto", root_skill)
         self.assertIn("review-auto.md", review)
         self.assertIn("latest completed review cycle is clean", review_auto)
         self.assertIn("scripts/review_watch.py", review_auto)
@@ -141,7 +141,7 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("do not block clean", review)
         self.assertIn("Never merge a PR", review_auto)
         for path in (SKILL_ROOT / "references").rglob("*.md"):
-            self.assertNotIn("$flow", path.read_text(encoding="utf-8"), path)
+            self.assertNotIn("$cyh-flow", path.read_text(encoding="utf-8"), path)
 
     def test_review_method_provenance_stays_out_of_runtime_context(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

@@ -29,7 +29,7 @@ jobs:
       - name: Validate Skill package
         uses: cyh-skill/.github/actions/validate-skill@ed44478f6dd48649dd1b2ee7dd219d4af7699d8b
         with:
-          path: skills/flow
+          path: skills/cyh-flow
 
       - name: Validate host metadata
         run: |

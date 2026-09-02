@@ -3,13 +3,16 @@ from __future__ import annotations
 import io
 import json
 import stat
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from skills.flow.scripts import review_watch
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "cyh-flow" / "scripts"
+sys.path.insert(0, str(SCRIPT_ROOT))
+import review_watch
 
 
 def cursor(*, head: str = "aaa", comments: dict | None = None) -> dict:

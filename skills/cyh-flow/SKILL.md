@@ -1,34 +1,34 @@
 ---
-name: flow
-description: Handle software-delivery work through flow with strict authorization boundaries. Use only when the user explicitly invokes $flow in Codex or /flow in Claude Code.
+name: cyh-flow
+description: Handle software-delivery work through cyh-flow with strict authorization boundaries. Use only when the user explicitly invokes $cyh-flow in Codex or /cyh-flow in Claude Code.
 ---
 
-# flow
+# cyh-flow
 
 Apply one consistent development workflow across repositories without hard-coding any product, organization, branch, or technology stack.
 
 ## Invocation and mode
 
-Codex is the priority host and invokes this Skill as `$flow`. Claude Code invokes the personal Skill as `/flow`; a marketplace/plugin install uses the canonical namespaced form `/cyh-flow:flow`. Do not promise a bare alias for the plugin form. These are host UI invocations, not shell commands. Use the matching prefix in the forms below:
+Codex is the priority host and invokes this Skill as `$cyh-flow`. Claude Code invokes the personal Skill as `/cyh-flow`; a marketplace/plugin install uses the canonical namespaced form `/cyh-flow:cyh-flow`. Do not promise a bare alias for the plugin form. These are host UI invocations, not shell commands. Use the matching prefix in the forms below:
 
 Treat the active user request as the explicit invocation input. In Claude Code, appended invocation arguments are: `$ARGUMENTS`. If the current host does not expand that placeholder, use the user's request directly.
 
 The supported explicit forms are:
 
 ```text
-<flow> plan <requirement or problem>
-<flow> build <plan, issue, task, or requested change>
-<flow> build auto <implementation-ready plan, issue, or requirement>
-<flow> auto <implementation-ready plan, issue, or requirement>
-<flow> review <working tree, branch, commit, or pull request>
-<flow> review auto <GitHub pull request>
-<flow> fix <known bug, failing behavior, or review finding>
-<flow> converge <objective and user-selected evidence lanes>
-<flow> task-add <bugs, small changes, or follow-up work>
-<flow> task-run [task ID or all eligible tasks]
+<cyh-flow> plan <requirement or problem>
+<cyh-flow> build <plan, issue, task, or requested change>
+<cyh-flow> build auto <implementation-ready plan, issue, or requirement>
+<cyh-flow> auto <implementation-ready plan, issue, or requirement>
+<cyh-flow> review <working tree, branch, commit, or pull request>
+<cyh-flow> review auto <GitHub pull request>
+<cyh-flow> fix <known bug, failing behavior, or review finding>
+<cyh-flow> converge <objective and user-selected evidence lanes>
+<cyh-flow> task-add <bugs, small changes, or follow-up work>
+<cyh-flow> task-run [task ID or all eligible tasks]
 ```
 
-Native host commands are controls, not aliases owned by this Skill. Codex `/plan` or `/review` may be used alongside the corresponding workflow. Claude Code plan permission mode is useful for read-only investigation, but `flow plan` must exit or switch from that permission mode before its sole authorized mutation: creating or updating the canonical requirement document. Claude Code's native `/review` is not an alias for `flow review`. Never claim that flow installed those controls or a standalone `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, or `/task-run` command.
+Native host commands are controls, not aliases owned by this Skill. Codex `/plan` or `/review` may be used alongside the corresponding workflow. Claude Code plan permission mode is useful for read-only investigation, but `cyh-flow plan` must exit or switch from that permission mode before its sole authorized mutation: creating or updating the canonical requirement document. Claude Code's native `/review` is not an alias for `cyh-flow review`. Never claim that cyh-flow installed those controls or a standalone `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, or `/task-run` command.
 
 ## Host capability mapping
 
