@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -109,6 +111,73 @@ class ReviewSnapshotTests(unittest.TestCase):
         self.assertEqual(failed_verify.returncode, 2)
         self.assertIn("artifact mismatch", failed_verify.stderr)
 
+    def test_verify_rejects_tampered_committed_snapshot(self) -> None:
+        base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        (self.repo / "tracked.txt").write_text("base\nnext\n", encoding="utf-8")
+        run(["git", "add", "tracked.txt"], self.repo)
+        run(["git", "commit", "-qm", "next"], self.repo)
+        head = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        packet = self.root / "committed-tamper-packet"
+        self.invoke(
+            "freeze",
+            "--repo",
+            str(self.repo),
+            "--kind",
+            "range",
+            "--base",
+            base,
+            "--head",
+            head,
+            "--output",
+            str(packet),
+        )
+
+        (packet / "snapshot" / "tracked.txt").write_text("tampered\n", encoding="utf-8")
+        failed_verify = self.invoke_without_check("verify", "--packet-dir", str(packet))
+
+        self.assertEqual(failed_verify.returncode, 2)
+        self.assertIn("snapshot worktree differs", failed_verify.stderr)
+
+    def test_verify_rejects_unexpected_untracked_snapshot_file(self) -> None:
+        packet = self.root / "unexpected-untracked-packet"
+        self.invoke(
+            "freeze",
+            "--repo",
+            str(self.repo),
+            "--kind",
+            "local",
+            "--output",
+            str(packet),
+        )
+        (packet / "snapshot" / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
+
+        failed_verify = self.invoke_without_check("verify", "--packet-dir", str(packet))
+
+        self.assertEqual(failed_verify.returncode, 2)
+        self.assertIn("untracked files do not match manifest", failed_verify.stderr)
+
+    def test_explicit_packet_uses_private_permissions(self) -> None:
+        packet = self.root / "private-packet"
+        self.invoke(
+            "freeze",
+            "--repo",
+            str(self.repo),
+            "--kind",
+            "local",
+            "--output",
+            str(packet),
+        )
+
+        self.assertEqual(stat.S_IMODE(packet.stat().st_mode), 0o700)
+        for name in (
+            "cached.diff",
+            "snapshot-meta.json",
+            "target-id.txt",
+            "target-manifest.jcs.json",
+            "unstaged.diff",
+        ):
+            self.assertEqual(stat.S_IMODE((packet / name).stat().st_mode), 0o600)
+
     def test_rejects_output_inside_source_repository(self) -> None:
         result = self.invoke_without_check(
             "freeze",
@@ -121,6 +190,37 @@ class ReviewSnapshotTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("outside the source repository", result.stderr)
+
+    def test_failed_automatic_freeze_removes_temporary_packet(self) -> None:
+        temporary_root = self.root / "automatic-packets"
+        temporary_root.mkdir()
+        environment = os.environ.copy()
+        environment["TMPDIR"] = str(temporary_root)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "freeze",
+                "--repo",
+                str(self.repo),
+                "--kind",
+                "range",
+                "--base",
+                "HEAD",
+                "--head",
+                "missing-review-head",
+            ],
+            cwd=self.repo,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=environment,
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(list(temporary_root.iterdir()), [])
 
     def test_committed_range_snapshot_is_reproducible(self) -> None:
         base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
@@ -148,6 +248,32 @@ class ReviewSnapshotTests(unittest.TestCase):
         self.assertFalse(
             self.invoke("compare-live", "--packet-dir", str(packet))["drifted"]
         )
+
+    def test_rejects_incorrect_explicit_merge_base(self) -> None:
+        base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        (self.repo / "tracked.txt").write_text("base\nnext\n", encoding="utf-8")
+        run(["git", "add", "tracked.txt"], self.repo)
+        run(["git", "commit", "-qm", "next"], self.repo)
+        head = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+
+        result = self.invoke_without_check(
+            "freeze",
+            "--repo",
+            str(self.repo),
+            "--kind",
+            "range",
+            "--base",
+            base,
+            "--head",
+            head,
+            "--merge-base",
+            head,
+            "--output",
+            str(self.root / "wrong-merge-base-packet"),
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("provided merge base does not match", result.stderr)
 
     def test_branch_compare_detects_local_ref_movement(self) -> None:
         base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import stat
 import subprocess
 import sys
 import tempfile
@@ -75,6 +76,41 @@ class TaskPoolTest(unittest.TestCase):
         self.assertIn("- 状态：pending", document)
         self.assertIn("- 领取人：—", document)
 
+    def test_add_rejects_reserved_task_marker_without_mutating_pool(self) -> None:
+        result = self.run_cli(
+            "add",
+            "--input",
+            "-",
+            "--date",
+            "2026-09-01",
+            payload={
+                "title": "包含内部标记",
+                "content": "before\n\n<!-- cyh-flow-task:TASK-20990101-001 -->\nafter",
+            },
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reserved cyh-flow task marker", result.stderr)
+        self.assertFalse(self.pool.exists())
+
+    def test_atomic_update_preserves_existing_document_mode(self) -> None:
+        self.pool.mkdir(parents=True)
+        document = self.pool / "2026-09-01.md"
+        document.write_text("# Task Pool · 2026-09-01\n", encoding="utf-8")
+        document.chmod(0o640)
+
+        result = self.run_cli(
+            "add",
+            "--input",
+            "-",
+            "--date",
+            "2026-09-01",
+            payload={"title": "保留权限"},
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(stat.S_IMODE(document.stat().st_mode), 0o640)
+
     def test_concurrent_agents_claim_unique_tasks(self) -> None:
         task_ids = set(self.add_tasks(8))
 
@@ -97,6 +133,21 @@ class TaskPoolTest(unittest.TestCase):
         tasks = json.loads(listed.stdout)["tasks"]
         self.assertEqual(len(tasks), 8)
         self.assertEqual(len({task["owner"] for task in tasks}), 8)
+
+    def test_claim_preserves_backslashes_in_agent_identity(self) -> None:
+        task_id = self.add_tasks(1)[0]
+        agent = r"DOMAIN\alice\1\g<0>"
+
+        claimed = self.run_cli("claim", "--agent", agent, "--task-id", task_id)
+
+        self.assertEqual(claimed.returncode, 0, claimed.stderr)
+        self.assertEqual(json.loads(claimed.stdout)["agent"], agent)
+        listed = self.run_cli("list", "--status", "doing")
+        self.assertEqual(listed.returncode, 0, listed.stderr)
+        self.assertEqual(json.loads(listed.stdout)["tasks"][0]["owner"], agent)
+        document = (self.pool / "2026-09-01.md").read_text(encoding="utf-8")
+        self.assertIn(f"- 领取人：{agent}", document)
+        self.assertNotIn("\a", document)
 
     def test_only_owner_can_finish_and_waiting_can_reopen(self) -> None:
         task_id = self.add_tasks(1)[0]

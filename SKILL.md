@@ -1,6 +1,6 @@
 ---
 name: cyh-flow
-description: Route software-development work through cyh-flow's cross-project plan, build, unattended build-and-converge, review, repair, convergence, or persistent task-pool workflows with explicit authorization boundaries. Use when the user invokes $cyh-flow to plan or implement a scoped change, run it unattended through all applicable reviews and tests, review read-only, repair or repeatedly recheck a problem, add bugs or small changes to a dated task pool with automatic screenshot preservation, or independently claim and process stored tasks. Do not use for general questions unrelated to software delivery.
+description: Run cyh-flow's explicitly invoked, subagent-first software-delivery workflow with strict authorization boundaries. Use only when the user invokes $cyh-flow for planning, implementation, review, repair, convergence, or repository task-pool work.
 ---
 
 # cyh-flow

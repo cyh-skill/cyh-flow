@@ -10,6 +10,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -66,6 +67,11 @@ def one_line(value: Any, *, fallback: str = "—") -> str:
 
 def markdown_body(value: Any) -> str:
     text = str(value or "").strip()
+    if TASK_START_RE.search(text):
+        raise PoolError(
+            "task body contains a reserved cyh-flow task marker; "
+            "rephrase or indent the marker before intake"
+        )
     return text or "—"
 
 
@@ -88,6 +94,7 @@ def pool_lock(pool: Path) -> Iterator[None]:
 
 def atomic_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
     )
@@ -97,6 +104,7 @@ def atomic_write(path: Path, content: str) -> None:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
+        os.chmod(temporary, mode)
         os.replace(temporary, path)
     finally:
         if temporary.exists():
@@ -120,7 +128,8 @@ def replace_field(segment: str, name: str, value: str) -> str:
     pattern = re.compile(rf"^- {re.escape(name)}：.*$", re.MULTILINE)
     if not pattern.search(segment):
         raise PoolError(f"task is missing required field: {name}")
-    return pattern.sub(f"- {name}：{one_line(value)}", segment, count=1)
+    replacement = f"- {name}：{one_line(value)}"
+    return pattern.sub(lambda _: replacement, segment, count=1)
 
 
 def append_history(segment: str, entry: str) -> str:

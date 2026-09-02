@@ -87,6 +87,14 @@ def raw_untracked_paths(repo: Path) -> list[bytes]:
     return sorted((item for item in raw.split(b"\0") if item), key=bytes)
 
 
+def raw_ignored_paths(repo: Path) -> list[bytes]:
+    raw = run_git(
+        repo,
+        ["ls-files", "--others", "--ignored", "--exclude-standard", "-z"],
+    )
+    return sorted((item for item in raw.split(b"\0") if item), key=bytes)
+
+
 def read_path_bytes(path: bytes) -> tuple[bytes, str]:
     info = os.lstat(path)
     if stat.S_ISLNK(info.st_mode):
@@ -239,11 +247,15 @@ def build_target(
             raise SnapshotError(f"{kind} targets require --base and --head")
         base = resolve_commit(repo, base_value)
         head = resolve_commit(repo, head_value)
-        merge_base = (
-            resolve_commit(repo, merge_base_value)
-            if merge_base_value
-            else run_git(repo, ["merge-base", base, head]).strip().decode("ascii")
-        )
+        actual_merge_base = run_git(repo, ["merge-base", base, head]).strip().decode("ascii")
+        if merge_base_value:
+            requested_merge_base = resolve_commit(repo, merge_base_value)
+            if requested_merge_base != actual_merge_base:
+                raise SnapshotError(
+                    "provided merge base does not match git merge-base: "
+                    f"expected {actual_merge_base}, got {requested_merge_base}"
+                )
+        merge_base = actual_merge_base
         artifact_data = {
             "committed_diff": run_git(
                 repo,
@@ -297,8 +309,19 @@ def prepare_output(value: str | None) -> Path:
         raise SnapshotError(f"output path is not a directory: {output}")
     if output.exists() and any(output.iterdir()):
         raise SnapshotError(f"output directory is not empty: {output}")
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, mode=0o700, exist_ok=True)
+    output.chmod(0o700)
     return output
+
+
+def write_private_bytes(path: Path, content: bytes) -> None:
+    path.write_bytes(content)
+    path.chmod(0o600)
+
+
+def write_private_text(path: Path, content: str, *, encoding: str) -> None:
+    path.write_text(content, encoding=encoding)
+    path.chmod(0o600)
 
 
 def copy_untracked(repo: Path, snapshot: Path, paths: list[bytes]) -> None:
@@ -375,17 +398,23 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
         else:
             raise SnapshotError("output directory must be outside the source repository")
     output = prepare_output(args.output)
-    manifest, artifact_data, metadata, untracked_paths = build_target(
-        repo, args.kind, args.base, args.head, args.merge_base
-    )
-    manifest_bytes = canonical_json(manifest)
-    target_id = "sha256:" + digest(manifest_bytes)
-    (output / "target-manifest.jcs.json").write_bytes(manifest_bytes)
-    (output / "target-id.txt").write_text(target_id + "\n", encoding="ascii")
-    for kind, data in artifact_data.items():
-        (output / ARTIFACT_FILES[kind]).write_bytes(data)
-    (output / "snapshot-meta.json").write_bytes(canonical_json(metadata))
-    snapshot = create_snapshot(repo, output, metadata, artifact_data, untracked_paths)
+    try:
+        manifest, artifact_data, metadata, untracked_paths = build_target(
+            repo, args.kind, args.base, args.head, args.merge_base
+        )
+        manifest_bytes = canonical_json(manifest)
+        target_id = "sha256:" + digest(manifest_bytes)
+        write_private_bytes(output / "target-manifest.jcs.json", manifest_bytes)
+        write_private_text(output / "target-id.txt", target_id + "\n", encoding="ascii")
+        for kind, data in artifact_data.items():
+            write_private_bytes(output / ARTIFACT_FILES[kind], data)
+        write_private_bytes(output / "snapshot-meta.json", canonical_json(metadata))
+        snapshot = create_snapshot(repo, output, metadata, artifact_data, untracked_paths)
+        verify(argparse.Namespace(packet_dir=output))
+    except Exception:
+        if args.output is None:
+            shutil.rmtree(output, ignore_errors=True)
+        raise
     return {
         "changed_files": metadata["changed_files"],
         "dirty_submodules": metadata["dirty_submodules"],
@@ -437,6 +466,16 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     snapshot_head = resolve_commit(snapshot, "HEAD")
     if snapshot_head != manifest["head_sha"]:
         raise SnapshotError("snapshot HEAD does not match manifest")
+    actual_untracked = raw_untracked_paths(snapshot)
+    expected_untracked = sorted(
+        b64url_decode(entry["path_b64url"])
+        for entry in manifest["entries"]
+        if entry["kind"] == "untracked"
+    )
+    if actual_untracked != expected_untracked:
+        raise SnapshotError("snapshot untracked files do not match manifest")
+    if raw_ignored_paths(snapshot):
+        raise SnapshotError("snapshot contains unexpected ignored files")
     if manifest["target_kind"] == "local":
         live_artifacts = {
             "cached_diff": run_git(
@@ -449,6 +488,14 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         for name, data in live_artifacts.items():
             if data != (packet / ARTIFACT_FILES[name]).read_bytes():
                 raise SnapshotError(f"snapshot does not reproduce {name}")
+    else:
+        if run_git(snapshot, ["diff", "--binary", "--full-index", "--no-ext-diff"]):
+            raise SnapshotError("snapshot worktree differs from committed target")
+        if run_git(
+            snapshot,
+            ["diff", "--cached", "--binary", "--full-index", "--no-ext-diff"],
+        ):
+            raise SnapshotError("snapshot index differs from committed target")
     for entry in manifest["entries"]:
         content = entry_content(snapshot, entry, metadata)
         if len(content) != entry["size"] or digest(content) != entry["sha256"]:
@@ -464,7 +511,7 @@ def compare_live(args: argparse.Namespace) -> dict[str, Any]:
     else:
         base = metadata.get("base_input") or metadata["base_sha"]
         head = metadata.get("head_input") or metadata["head_sha"]
-        merge_base = metadata.get("merge_base_input")
+        merge_base = None
     manifest, _, _, _ = build_target(repo, metadata["kind"], base, head, merge_base)
     live_target = "sha256:" + digest(canonical_json(manifest))
     return {
