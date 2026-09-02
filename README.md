@@ -157,6 +157,7 @@ Build 是纯执行模式，不会在实现中调用四路代码 Review 或主复
 
 ```text
 cyh-flow/
+|-- LICENSE                  # MIT 开源许可证
 |-- SKILL.md                 # Skill 入口、模式路由和共享边界
 |-- .claude-plugin/
 |   |-- plugin.json          # Claude Code 插件清单
@@ -188,4 +189,4 @@ cyh-flow/
 
 ## 可见性与授权
 
-本仓库公开可读，但尚未附带开源许可证；公开访问不等于获得复制、修改或重新分发许可。若需要按开源方式使用，应先由仓库所有者明确许可并补充对应 LICENSE。
+本仓库采用 [MIT License](LICENSE) 开源；版权归 `cyh-skill` 所有，使用、复制、修改和分发时请遵守许可证中的版权与许可声明保留要求。

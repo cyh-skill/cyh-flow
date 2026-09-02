@@ -32,6 +32,7 @@ class HostCompatibilityTests(unittest.TestCase):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         self.assertEqual(manifest["name"], "cyh-flow")
+        self.assertEqual(manifest["license"], "MIT")
         self.assertEqual(
             manifest["$schema"],
             "https://json.schemastore.org/claude-code-plugin-manifest.json",
@@ -53,6 +54,18 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertEqual(len(plugins), 1)
         self.assertEqual(plugins[0]["name"], "cyh-flow")
         self.assertEqual(plugins[0]["source"], "./")
+        self.assertEqual(plugins[0]["license"], "MIT")
+
+    def test_mit_license_matches_manifests_and_readme(self) -> None:
+        license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertTrue(license_text.startswith("MIT License\n\n"))
+        self.assertIn("Copyright (c) 2026 cyh-skill", license_text)
+        self.assertIn("Permission is hereby granted, free of charge", license_text)
+        self.assertIn('THE SOFTWARE IS PROVIDED "AS IS"', license_text)
+        self.assertIn("[MIT License](LICENSE)", readme)
+        self.assertNotIn("尚未附带开源许可证", readme)
 
     def test_claude_wrapper_is_explicit_and_loads_canonical_skill(self) -> None:
         wrapper = ROOT / "claude" / "skills" / "cyh-flow" / "SKILL.md"

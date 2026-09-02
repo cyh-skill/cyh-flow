@@ -12,6 +12,7 @@
       "name": "cyh-flow",
       "description": "Plan, build, review, repair, converge, and process repository task pools with explicit authorization boundaries",
       "source": "./",
+      "license": "MIT",
       "category": "development",
       "tags": ["workflow", "planning", "review", "delivery", "subagents"]
     }
