@@ -2,7 +2,7 @@
 
 Use top-level `<cyh-flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, records the resulting working target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
 
-This is a phase orchestrator, not a third implementation or review protocol. Read [build.md](build.md) for phase one, then read [converge.md](converge.md) and [review.md](review.md) only after phase one completes. Do not run build and convergence concurrently or blur their completion gates.
+This is a phase orchestrator, not a third implementation or review protocol. Read [build.md](build.md) for phase one, then read [converge.md](converge.md) and [review-deep.md](review-deep.md) only after phase one completes. Do not run build and convergence concurrently or blur their completion gates.
 
 ## Orchestration ledger and Goal sequence
 
@@ -25,7 +25,7 @@ If an unrelated unfinished Goal prevents phase creation, do not replace it. Reco
 
 The matrix must include:
 
-- full code review using [review.md](review.md): four independent live specialist reviews and a fresh master recheck;
+- deep code review using [review-deep.md](review-deep.md): four independent live specialist reviews and a fresh master recheck;
 - every applicable established automated check discoverable from repository instructions, CI definitions, package scripts, build files, and affected-module conventions, including focused and broader unit, integration, end-to-end, type, lint, build, schema, migration, contract, or packaging checks as relevant;
 - every platform or user-flow check applicable to the affected surface, such as browser journeys, API flows, simulator, emulator, device, accessibility, or runtime-log validation; execute it in an authorized safe test environment when available, otherwise keep that required lane blocked rather than reclassifying it as not applicable;
 - existing security, performance, compatibility, recovery, or data-integrity checks when the changed surface or repository contract makes them applicable.

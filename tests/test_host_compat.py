@@ -101,6 +101,12 @@ class HostCompatibilityTests(unittest.TestCase):
         root_skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         plan = (SKILL_ROOT / "references" / "plan.md").read_text(encoding="utf-8")
         review = (SKILL_ROOT / "references" / "review.md").read_text(encoding="utf-8")
+        review_deep = (SKILL_ROOT / "references" / "review-deep.md").read_text(
+            encoding="utf-8"
+        )
+        daily_reviewer = (
+            SKILL_ROOT / "references" / "review" / "daily-reviewer.md"
+        ).read_text(encoding="utf-8")
         review_auto = (SKILL_ROOT / "references" / "review-auto.md").read_text(
             encoding="utf-8"
         )
@@ -112,14 +118,27 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("not the Codex create/get/update Goal API", root_skill)
         self.assertIn("experimental agent teams", root_skill)
         self.assertIn("editing-capable permission mode", plan)
-        self.assertIn("without enabled persistent mailbox delivery", review)
+        self.assertIn("without enabled persistent mailbox delivery", review_deep)
+        self.assertIn("<cyh-flow> review deep", root_skill)
         self.assertIn("<cyh-flow> review auto", root_skill)
         self.assertIn("review-auto.md", review)
-        self.assertIn("latest completed review cycle is clean", review_auto)
+        self.assertIn("one fresh isolated read-only reviewer", review)
+        self.assertIn("five-axis", review)
+        self.assertIn("**Correctness:**", daily_reviewer)
+        self.assertIn("**Readability and simplicity:**", daily_reviewer)
+        self.assertIn("**Architecture:**", daily_reviewer)
+        self.assertIn("**Security:**", daily_reviewer)
+        self.assertIn("**Performance:**", daily_reviewer)
+        self.assertNotIn("fresh master", daily_reviewer)
+        self.assertIn("four specialist", review_deep)
+        self.assertIn("fresh master", review_deep)
+        self.assertIn("latest completed ordinary review cycle is `Review-ready`", review_auto)
+        self.assertIn("exactly one fresh daily five-axis reviewer", review_auto)
+        self.assertNotIn("all four specialist artifacts", review_auto)
         self.assertIn("scripts/review_watch.py", review_auto)
-        self.assertIn("Never run the repository's complete unit", review)
-        self.assertIn("integration-reliability", review)
-        self.assertNotIn("performance-engineer", review)
+        self.assertIn("Never run the repository's complete unit", review_deep)
+        self.assertIn("integration-reliability", review_deep)
+        self.assertNotIn("performance-engineer", review_deep)
         self.assertTrue(
             (SKILL_ROOT / "references" / "review" / "integration-reviewer.md").is_file()
         )
@@ -135,10 +154,11 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertTrue(review_artifacts.is_file())
         self.assertTrue(review_publish.is_file())
         self.assertIn("review_prepare.py", review)
-        self.assertIn("review_artifacts.py", review)
+        self.assertNotIn("review_artifacts.py", review)
+        self.assertIn("review_artifacts.py", review_deep)
         self.assertIn("review_publish.py", review)
-        self.assertIn("ponytail-complexity", review)
-        self.assertIn("do not block clean", review)
+        self.assertIn("ponytail-complexity", review_deep)
+        self.assertIn("do not block clean", review_deep)
         self.assertIn("Never merge a PR", review_auto)
         for path in (SKILL_ROOT / "references").rglob("*.md"):
             self.assertNotIn("$cyh-flow", path.read_text(encoding="utf-8"), path)
@@ -147,12 +167,14 @@ class HostCompatibilityTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         runtime_paths = [
             SKILL_ROOT / "references" / "review.md",
+            SKILL_ROOT / "references" / "review-deep.md",
             *(SKILL_ROOT / "references" / "review").glob("*.md"),
         ]
         runtime_text = "\n".join(
             path.read_text(encoding="utf-8") for path in runtime_paths
         )
         source_urls = (
+            "https://github.com/addyosmani/agent-skills/blob/d2c37ef6225dd8726cdd369a8030307f48592d26/skills/code-review-and-quality/SKILL.md",
             "https://github.com/openai/codex/blob/81de4f251cfdaf32ecb85e2160ebfc11a562d44b/codex-rs/prompts/templates/review/rubric.md",
             "https://github.com/DietrichGebert/ponytail/blob/bd6176a9b33ab72594ff82e6f34f17b085f25565/skills/ponytail-review/SKILL.md",
             "https://github.com/trailofbits/skills/blob/4b1b74b181e81cbcaa8d3b68a0e4ed867165b972/plugins/differential-review/skills/differential-review/SKILL.md",
