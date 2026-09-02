@@ -93,11 +93,18 @@ class HostCompatibilityTests(unittest.TestCase):
         root_skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         plan = (ROOT / "references" / "plan.md").read_text(encoding="utf-8")
         review = (ROOT / "references" / "review.md").read_text(encoding="utf-8")
+        review_auto = (ROOT / "references" / "review-auto.md").read_text(
+            encoding="utf-8"
+        )
 
         self.assertIn("not the Codex create/get/update Goal API", root_skill)
         self.assertIn("experimental agent teams", root_skill)
         self.assertIn("editing-capable permission mode", plan)
         self.assertIn("without enabled persistent mailbox delivery", review)
+        self.assertIn("<cyh-flow> review auto", root_skill)
+        self.assertIn("review-auto.md", review)
+        self.assertIn("latest completed review cycle is clean", review_auto)
+        self.assertIn("Never merge a PR", review_auto)
         for path in (ROOT / "references").rglob("*.md"):
             self.assertNotIn("$cyh-flow", path.read_text(encoding="utf-8"), path)
 

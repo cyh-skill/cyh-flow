@@ -1,6 +1,6 @@
 # cyh-flow
 
-面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流 Skill。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于方案设计、代码实现、无人值守构建与收敛、只读审查、一次性修复、持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
+面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流 Skill。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于方案设计、代码实现、无人值守构建与收敛、一次性或无人值守 PR 审查、一次性修复、持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
 ```text
 用户请求
@@ -8,7 +8,7 @@
    +-- plan   -> 只读调查 -> 统一需求方案文档 -> 可执行方案
    +-- build  -> 多 Agent 实现/验证 -> 普通：问题/决策点即停；auto：AI 决策 + 台账后继续
    +-- auto   -> build auto 跑到底 -> converge 所有适用 Review/测试 -> finding 归零
-   +-- review -> 四路即时独立审查 + 主审独立读取 -> 主动证伪裁决 -> 立即交付
+   +-- review -> 四路即时独立审查 + 主审证伪 -> 普通：立即交付；auto：发 PR 评论并监听后续变化
    +-- fix      -> 修复一个明确问题 -> 针对性验证
    +-- converge -> Goal: 复查/测试 -> 修复 -> 重验 -> finding 归零
    +-- task-add -> 分析一批事项 -> 按天归档 Markdown + 截图
@@ -22,7 +22,7 @@
 | `plan` | 统一定义需求行为、实现方式和验收路径 | 多个只读 sub-Agent 并行调查代码、契约、数据、测试和平台面；主 Agent 单写一份同时承担 Spec 与 Plan 职责的需求 `.md` | 子 Agent 写应用代码或竞争写需求文档、把同一需求拆成多份决策文档、建分支、提交、推送、部署或更新外部系统 |
 | `build` | 实现明确需求、计划、Issue 或产品变更；`auto` 由 AI 自动决策并持续执行 | 在约定范围内修改本地文件，尽可能拆分多 Agent 实现/验证并运行验收；auto 建立 Goal，把中间问题和自动决策写入本地台账供人工 Review | Build 内启动代码 Review、普通 build 遇到问题或决策点后继续、auto 擅自扩大范围或执行高风险操作、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `auto` | 无人值守完成明确实现，并把结果收敛到所有适用 Review 和测试通过 | 串行建立 Build 与 Converge 两个 Goal，先按 `build auto` 完成实现，再以四路 Review、项目既有自动化检查及受影响平台流程为必需证据持续修复和重验 | 跳过必需证据、并行运行两个 Goal、未经明确要求的提交、推送、PR、部署、生产或外部写入、破坏性操作 |
-| `review` | 审查工作区、分支、提交或 Pull Request，判断是否以最优实现覆盖完整关联面 | GitHub PR 使用已认证 `gh`；四个 specialist 只拿目标入口与只读边界，各自读取当下 Diff、上下文、需求和调用面，主审再独立读取当下目标并逐条尝试证伪；不冻结、不锁定、不校验漂移，目标中途变化也照常完成；用户显式给出他人 GitHub PR 链接时，完整 Review 后自动发布并回读一次普通 PR 评论 | 因本地脏工作树或无关分支阻塞远端 PR Review、为了 Review 切换当前 checkout、把静态怀疑直接升级为 finding、用 reviewer 数量提高置信度、直接修复、自动等待或重跑、提交、推送、批准、请求修改、Resolve thread、Merge，或对本人 PR、推断目标和不完整 Review 自动发评论 |
+| `review` | 审查工作区、分支、提交或 Pull Request；显式 `review auto` 无人值守跟进 GitHub PR | GitHub PR 使用已认证 `gh`；每轮由四个 specialist 独立读取实时 Diff、上下文、需求和调用面，fresh master 再证伪裁决；普通模式立即交付；`review auto` 幂等发布每轮结论，监听新提交及会影响结论的人工评论并继续完整 Review，直到最新一轮 clean 或用户明确结束 | 冻结或锁定 PR、为了 Review 切换当前 checkout、把静态怀疑直接升级为 finding、直接修复、提交、推送、Approve、Request changes、Resolve thread 或 Merge；普通模式自动等待重跑；auto 将安静等待、暂时查询失败或不完整审查冒充结束 |
 | `fix` | 一次性修复明确 bug、失败行为或 Review finding | 多个只读 sub-Agent 并行定位根因、契约和验证面，由一个写者完成范围内修复与针对性验证 | 多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、PR、部署或外部写入 |
 | `converge` | 持续发现、修复并复查问题，直到目标范围内 finding 归零 | 建立 Goal 和 finding 台账，把用户定义的 Review、自动化测试、设备、Web、运行时、安全或性能证据通道尽可能拆给并行 sub-Agent，由一个写者修复 | 多修复写者竞争、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `task-add` | 批量收录 bug、小改动、杂项或后续工作 | 多个只读 sub-Agent 拆分事项和截图证据，主 Agent 去重后单写 `.cyh-flow/tasks/YYYY-MM-DD.md` 并原样保存截图 | 子 Agent 修改应用代码、竞争写任务池、领取或处理任务、提交、推送或外部写入 |
@@ -33,6 +33,8 @@
 `converge` 中的“finding 归零”是一个可验证停止条件，不是只重复代码 Review：finding 可以来自四路审查、自动化检查、模拟器或真机流程、Web 流程、运行时日志、安全、性能和业务验收。证据通道的决定权属于用户，你可以要求“只 Review”“只测指定浏览器流程”“模拟器 + Web”，也可以在过程中增加、替换或移除通道；Agent 必须把变更记录为 Goal 证据契约的修订，不能拿其他证据替代，也不能擅自增加阻塞通道。只有当你没有指定或明确把选择权交给 Agent 时，Agent 才会先声明一个与风险相称的最小组合，建议项只有经你接受后才成为完成门槛。任一用户必需通道中的受支持 finding、失败或重大未验证项都会阻止 Goal 完成，最终修复后必须重跑被影响的必需通道。它不表示对软件做“绝对无 bug”的不可证明承诺。
 
 顶层 `auto` 是这个证据选择规则的显式例外：显式调用 `cyh-flow auto` 就表示把选择权交给 Agent，并要求“所有适用的 Review 和测试”，其中四路代码 Review 与主复查固定必需，同时从项目文档、CI 配置、包脚本、构建文件和影响面推导单元、集成、E2E、类型、Lint、Build、契约、迁移、浏览器、模拟器、设备、安全、性能等适用通道。适用性由变更影响和项目契约决定，不由当前环境能否执行决定；当前授权内可安全执行的通道直接跑，适用但缺少环境或权限的通道会让流水线保持未完成并说明阻塞，不能悄悄跳过，也不会为了跑全而自行 push 触发远端 CI、修改外部环境或碰生产。
+
+`review auto` 与顶层 `auto` 不同：它不实现或修复代码，只把同一套完整 Review 套在无人值守事件循环外层。首轮读取当前实时 PR，验证后的 finding 或 clean 结论以普通 PR 评论发布；有 finding 时继续监听 head SHA、人工 Issue/Review/inline 评论及影响既有证据的 Checks，新的提交一定触发下一轮，可能改变需求、范围、实现证据或 finding 状态的人工讨论也触发下一轮。事件可以合并处理，下一轮始终读取当时的实时内容，不冻结、不锁定、不为 reviewer 准备共享快照；自己的带指纹评论不会触发循环。只有最新完整轮次达到 clean 且发布后的即时复查没有未处理事件，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败、必需检查仍 pending 或 Review 不完整都不算完成。
 
 ## 安装
 
@@ -98,6 +100,8 @@ $cyh-flow auto 按 docs/plans/checkout.md 无人值守完成实现，然后跑�
 
 $cyh-flow review PR #456，只做 review，不修改代码
 
+$cyh-flow review auto https://github.com/acme/payments/pull/456，无人值守审查并把问题发到 PR
+
 $cyh-flow fix 修复 Review 发现的并发问题，并运行针对性回归测试
 
 $cyh-flow converge 持续检查结账流程直到 finding 归零；证据通道：四路 Review、iOS 模拟器、结账 Web 流程
@@ -112,6 +116,7 @@ Claude Code 插件安装后使用规范命名空间，个人 Skill 安装则使�
 ```text
 /cyh-flow:cyh-flow plan 给结账流程增加批量确认，先分析影响并出方案
 /cyh-flow:cyh-flow auto 按 docs/plans/checkout.md 完成实现与全证据收敛
+/cyh-flow:cyh-flow review auto https://github.com/acme/payments/pull/456
 
 # 仅限个人 Skill 安装
 /cyh-flow review PR #456，只做 review，不修改代码
@@ -124,7 +129,7 @@ cyh-flow 的契约是仅显式调用：普通的自然语言 plan、build、auto
 | 契约 | Codex | Claude Code | 兼容降级 |
 | --- | --- | --- | --- |
 | 显式入口 | `$cyh-flow ...` | 个人 Skill `/cyh-flow ...`；插件 `/cyh-flow:cyh-flow ...` | 文档中的 `cyh-flow` 表示当前宿主的对应入口 |
-| Goal | 原生 create/get/update Goal API | 用户自行启用的 `/goal <condition>`：session-scoped、单 active、替换语义、基于 Stop hook | 两者不作 API 等价声明；可用时由 Task 工具记录当前阶段，`.cyh-flow` 台账始终承担可恢复事实源 |
+| Goal | 原生 create/get/update Goal API | 用户自行启用的 `/goal <condition>`：session-scoped、单 active、替换语义、基于 Stop hook | 两者不作 API 等价声明；可用时由 Task 工具记录当前阶段；没有持续执行循环时，`review auto` 必须明确 blocked，不能声称仍在后台监控 |
 | 独立工作者 | Agent 与 addressable follow-up | 标准 `Agent`；只有用户已启用实验性 Agent Teams 时才使用 `SendMessage`/共享团队协调 | 无可寻址 follow-up 时先收齐四路 specialist，再启动 fresh master；无并发时保持隔离并顺序执行 |
 | 项目规则 | `AGENTS.md` | `CLAUDE.md` 及宿主加载的项目规则 | 读取当前宿主和项目实际存在的规则，不伪造统一优先级 |
 | 浏览器 Skill | `browser-skill:cyh-browser-skill` | `/browser-skill:cyh-browser-skill` | 未安装则将所需浏览器证据标记为 blocked，不换用其他自动化体系 |
@@ -148,10 +153,10 @@ Build 是纯执行模式，不会在实现中调用四路代码 Review 或主复
 - 浏览器自动化固定使用已安装的 `cyh-browser-skill`：Codex 入口为 `browser-skill:cyh-browser-skill`，Claude Code 插件入口为 `/browser-skill:cyh-browser-skill`；普通公开网页检索使用宿主常规搜索能力。
 - 八种模式都优先把独立工作拆给 sub-Agent 并填满有效并发；协调者负责权限、依赖、冲突控制和结果整合，具体单写者或多写者拓扑以各模式 reference 为准。
 - 目标是满足真实需求与仓库约束的最优实现，不是最少行数或最小 diff；正确性、安全、数据完整性、兼容性等硬约束满足后，再综合复用程度、架构契合、清晰度、可测试性、可维护性、性能和变更范围作选择。
-- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并让 Codex correctness、Ponytail complexity、Differential security、Performance engineer 四路在隔离上下文中审查同一冻结目标。GitHub PR 以 `gh` 返回的远端 base/head SHA 为准；当前工作树脏、有无关分支或没有 PR 分支时，协调者会自动复用精确对象或创建一次隔离临时 clone，不切换用户 checkout，也不会给每个 reviewer 重复 clone。第一轮只准入能证明本轮引入、真实可达、符合权威契约和范围决定、修复责任边界明确的候选，其余进入无严重级别和修法的 open questions；有足够槽位时独立主 Agent 同步完成事实型需求和影响面预检，四路结果到齐后忽略原始定级与修法，主动从状态生产者、跨端执行边界、角色组合、历史决定和替代路径逐条寻找反证，再决定 verified、known deferred、rejected 或 unresolved。每个阶段批量执行独立读取与检查，共享静态证据只生成一次；实时工作树后来变化只会产生漂移提示，不会扣住已经完成的冻结快照结论或自动重跑。用户显式给出他人 GitHub PR URL 时，review 完成且最终快照校验通过后会用 `gh` 自动发布一次普通评论并回读确认；正文带目标和内容指纹以避免不确定重试造成重复评论，但不会自动 Approve、Request changes、Resolve thread 或 Merge。一行代码只是可能的结果，不是目标。
+- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并让 Codex correctness、Ponytail complexity、Differential security、Performance engineer 四路在隔离上下文中读取当下可见目标，fresh master 收齐结果后忽略原始定级与修法，主动从状态生产者、跨端执行边界、角色组合、历史决定和替代路径逐条寻找反证，再决定 verified、known deferred、rejected 或 unresolved。GitHub PR 使用 `gh` 读取实时远端内容；本地工作树脏、有无关分支或没有 PR 分支时，协调者复用可读对象或创建一次隔离临时 clone，不切换用户 checkout。普通 review 不监控也不因目标移动重跑；显式 `review auto` 才用轻量事件游标监听代码和讨论变化，在每轮完成后幂等发布普通评论并决定继续或 clean 结束。两种模式都不做不可变快照或锁，不会自动 Approve、Request changes、Resolve thread 或 Merge。
 - Plan 的最终答复必须给出统一需求方案文档路径及其就绪状态；最终答复先给结论，再说明证据、未完成验证和仍需用户授权的下一步。
 
-四路人格分别适配自 [OpenAI Codex review rubric](https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/review/rubric.md)、[Ponytail review](https://github.com/DietrichGebert/ponytail/tree/main/skills/ponytail-review)、[Trail of Bits differential-review](https://github.com/trailofbits/skills/tree/main/plugins/differential-review) 和 [performance-testing-review 的 performance engineer](https://github.com/wshobson/agents/tree/main/plugins/performance-testing-review)。上游链接提供真实方法来源，仓库内 adapter 统一冻结目标、只读边界、候选准入和输出契约；主复查不按投票决定，也不继承第一轮的严重级别和修法，而是主动证伪可达性、权威契约、范围决定、影响与责任边界后再给最终 P0-P3、known deferred、advisory、rejected 或 unresolved 结论。
+四路人格分别适配自 [OpenAI Codex review rubric](https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/review/rubric.md)、[Ponytail review](https://github.com/DietrichGebert/ponytail/tree/main/skills/ponytail-review)、[Trail of Bits differential-review](https://github.com/trailofbits/skills/tree/main/plugins/differential-review) 和 [performance-testing-review 的 performance engineer](https://github.com/wshobson/agents/tree/main/plugins/performance-testing-review)。上游链接提供真实方法来源，仓库内 adapter 统一实时读取契约、只读边界、候选准入和输出格式；主复查不按投票决定，也不继承第一轮的严重级别和修法，而是主动证伪可达性、权威契约、范围决定、影响与责任边界后再给最终 P0-P3、known deferred、advisory、rejected 或 unresolved 结论。
 
 ## 仓库结构
 
@@ -174,6 +179,7 @@ cyh-flow/
     |-- build.md             # 多 Agent 执行、普通停止策略与 auto AI 决策审计台账
     |-- auto.md              # build auto 到全证据 converge 的无人值守编排
     |-- review.md            # 即时四路独立审查、主复查与 evidence-bounded clean gate
+    |-- review-auto.md       # PR 评论投递、事件监听、重审与无人值守停止条件
     |-- review/              # 公共契约、四种 reviewer 人格与主复查角色
     |-- fix.md               # 一次性问题修复与针对性验证
     |-- converge.md          # Goal、跨证据通道复查与 finding-zero 收敛
