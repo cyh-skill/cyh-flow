@@ -48,10 +48,9 @@ https://github.com/cyh-skill/cyh-flow
 
 ### Codex 手动安装
 
-仓库当前为私有仓库，先确认 `gh` 已登录且账号有访问权限，然后克隆到 Codex Skill 目录：
+仓库为公开仓库，可直接克隆到 Codex Skill 目录：
 
 ```bash
-gh auth status
 gh repo clone cyh-skill/cyh-flow ~/.agents/skills/cyh-flow
 ```
 
@@ -65,12 +64,7 @@ git -C ~/.agents/skills/cyh-flow pull --ff-only
 
 ### Claude Code 插件安装（推荐）
 
-仓库提供 Claude Code 插件清单和一个显式调用 wrapper。私有仓库先让 GitHub CLI 接管 Git 凭据，再在 Claude Code 中添加 marketplace 并安装插件：
-
-```bash
-gh auth status
-gh auth setup-git
-```
+仓库提供 Claude Code 插件清单和一个显式调用 wrapper，可直接在 Claude Code 中添加 marketplace 并安装插件：
 
 ```text
 /plugin marketplace add cyh-skill/cyh-flow
@@ -194,4 +188,4 @@ cyh-flow/
 
 ## 可见性与授权
 
-本仓库当前为私有仓库，尚未附带开源许可证。将来若要公开发布，应先明确授权方式并补充对应 LICENSE；获得仓库访问权限本身不等于获得重新分发许可。
+本仓库公开可读，但尚未附带开源许可证；公开访问不等于获得复制、修改或重新分发许可。若需要按开源方式使用，应先由仓库所有者明确许可并补充对应 LICENSE。
