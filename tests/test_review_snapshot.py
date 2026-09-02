@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import importlib.util
 import json
 import os
 import stat
@@ -8,10 +10,16 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "review_snapshot.py"
+SCRIPT_SPEC = importlib.util.spec_from_file_location("cyh_flow_review_snapshot", SCRIPT)
+if SCRIPT_SPEC is None or SCRIPT_SPEC.loader is None:
+    raise RuntimeError(f"cannot load review snapshot module: {SCRIPT}")
+REVIEW_SNAPSHOT = importlib.util.module_from_spec(SCRIPT_SPEC)
+SCRIPT_SPEC.loader.exec_module(REVIEW_SNAPSHOT)
 
 
 def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -23,6 +31,17 @@ def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+
+def run_bytes(command: list[str], cwd: Path, payload: bytes = b"") -> bytes:
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        check=True,
+        input=payload,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ).stdout
 
 
 class ReviewSnapshotTests(unittest.TestCase):
@@ -221,6 +240,91 @@ class ReviewSnapshotTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2)
         self.assertEqual(list(temporary_root.iterdir()), [])
+
+    def test_postwrite_failure_cleans_automatic_packet_and_reports_explicit_path(
+        self,
+    ) -> None:
+        arguments = {
+            "repo": str(self.repo),
+            "kind": "local",
+            "base": None,
+            "head": None,
+            "merge_base": None,
+        }
+        temporary_root = self.root / "postwrite-automatic-packets"
+        temporary_root.mkdir()
+        with mock.patch.object(
+            REVIEW_SNAPSHOT.tempfile, "tempdir", str(temporary_root)
+        ), mock.patch.object(
+            REVIEW_SNAPSHOT,
+            "create_snapshot",
+            side_effect=REVIEW_SNAPSHOT.SnapshotError("forced post-write failure"),
+        ):
+            with self.assertRaisesRegex(
+                REVIEW_SNAPSHOT.SnapshotError, "forced post-write failure"
+            ):
+                REVIEW_SNAPSHOT.freeze(argparse.Namespace(output=None, **arguments))
+        self.assertEqual(list(temporary_root.iterdir()), [])
+
+        explicit_packet = self.root / "failed-explicit-packet"
+        with mock.patch.object(
+            REVIEW_SNAPSHOT,
+            "create_snapshot",
+            side_effect=REVIEW_SNAPSHOT.SnapshotError("forced post-write failure"),
+        ):
+            with self.assertRaises(REVIEW_SNAPSHOT.SnapshotError) as caught:
+                REVIEW_SNAPSHOT.freeze(
+                    argparse.Namespace(output=str(explicit_packet), **arguments)
+                )
+        self.assertIn(str(explicit_packet.resolve()), str(caught.exception))
+        self.assertTrue((explicit_packet / "target-manifest.jcs.json").is_file())
+
+    def test_non_utf8_git_path_has_safe_changed_file_metadata(self) -> None:
+        base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()
+        base_tree = run_bytes(["git", "ls-tree", "-z", base], self.repo)
+        blob = run_bytes(
+            ["git", "hash-object", "-w", "--stdin"], self.repo, b"raw path\n"
+        ).strip()
+        raw_path = b"bad-\xff.txt"
+        tree = run_bytes(
+            ["git", "mktree", "-z"],
+            self.repo,
+            base_tree + b"100644 blob " + blob + b"\t" + raw_path + b"\0",
+        ).strip()
+        head = run_bytes(
+            ["git", "commit-tree", tree.decode("ascii"), "-p", base],
+            self.repo,
+            b"raw path commit\n",
+        ).strip().decode("ascii")
+
+        _, _, metadata, _ = REVIEW_SNAPSHOT.build_target(
+            self.repo, "range", base, head, None
+        )
+
+        self.assertEqual(metadata["changed_files"], [r"bad-\xff.txt"])
+        self.assertIn(b"bad-\\\\xff.txt", REVIEW_SNAPSHOT.canonical_json(metadata))
+
+        if sys.platform.startswith("linux"):
+            packet = self.root / "raw-path-packet"
+            frozen = self.invoke(
+                "freeze",
+                "--repo",
+                str(self.repo),
+                "--kind",
+                "range",
+                "--base",
+                base,
+                "--head",
+                head,
+                "--output",
+                str(packet),
+            )
+            self.assertEqual(frozen["changed_files"], [r"bad-\xff.txt"])
+            snapshot_names = os.listdir(os.fsencode(packet / "snapshot"))
+            self.assertIn(raw_path, snapshot_names)
+            self.assertEqual(
+                self.invoke("verify", "--packet-dir", str(packet))["status"], "ok"
+            )
 
     def test_committed_range_snapshot_is_reproducible(self) -> None:
         base = run(["git", "rev-parse", "HEAD"], self.repo).stdout.strip()

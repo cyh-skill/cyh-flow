@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "cyh-flow",
+  "displayName": "cyh-flow",
+  "description": "Codex-first software-delivery workflow with explicit Claude Code compatibility and authorization boundaries",
+  "author": {
+    "name": "cyh-skill"
+  },
+  "homepage": "https://github.com/cyh-skill/cyh-flow",
+  "repository": "https://github.com/cyh-skill/cyh-flow",
+  "keywords": ["software-delivery", "planning", "code-review", "subagents", "workflow"],
+  "skills": ["./claude/skills/cyh-flow"]
+}

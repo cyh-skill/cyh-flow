@@ -1,6 +1,6 @@
 # Auto mode
 
-Use top-level `$cyh-flow auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, freezes the resulting target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
+Use top-level `<cyh-flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, freezes the resulting target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
 
 This is a phase orchestrator, not a third implementation or review protocol. Read [build.md](build.md) for phase one, then read [converge.md](converge.md) and [review.md](review.md) only after phase one completes. Do not run build and convergence concurrently or blur their completion gates.
 
@@ -10,9 +10,9 @@ Use one repository-local orchestration ledger as the durable source of phase sta
 
 Record the objective, source of truth, repositories, starting revisions, non-goals, authorization boundary, current phase, phase-specific Goal and ledger paths, frozen targets, derived evidence matrix, decisions, blockers, resume cursor, and final evidence. For cross-repository work, name the repository in every task and result. Do not store secrets, personal data, credentials, or unbounded logs.
 
-The host permits only one active native Goal, so do not create a simultaneous parent Goal. Sequence exactly two phase Goals:
+Maintain only one active Goal under the host mapping, so do not create a simultaneous parent Goal. Codex can sequence its native Goal API; Claude Code may use one user-activated session `/goal`, Task records for the two phases, and the orchestration ledger, but must not claim two independently addressable native Goals or replace an unrelated active `/goal`. Sequence exactly two logical phase Goals:
 
-1. Create or resume the build Goal under the rules for explicit `$cyh-flow build auto`. Record it as `build` in the orchestration ledger and execute it until its own completion gate is satisfied. A blocked or incomplete build stops the pipeline; do not start convergence.
+1. Create or resume the build Goal under the rules for explicit `<cyh-flow> build auto`. Record it as `build` in the orchestration ledger and execute it until its own completion gate is satisfied. A blocked or incomplete build stops the pipeline; do not start convergence.
 2. Freeze the complete post-build target, mark the build phase complete in the orchestration ledger, and only then complete the build Goal.
 3. Create or resume a separate convergence Goal over that frozen target. Record it as `converge`, derive the mandatory evidence matrix below, and execute the converge repair-and-recheck loop until its own completion gate is satisfied.
 4. Mark the orchestration ledger complete only after both Goals completed against the recorded targets and the final convergence evidence covers every applicable lane.
@@ -30,7 +30,7 @@ The matrix must include:
 - every platform or user-flow check applicable to the affected surface, such as browser journeys, API flows, simulator, emulator, device, accessibility, or runtime-log validation; execute it in an authorized safe test environment when available, otherwise keep that required lane blocked rather than reclassifying it as not applicable;
 - existing security, performance, compatibility, recovery, or data-integrity checks when the changed surface or repository contract makes them applicable.
 
-Use project instructions and impact analysis to decide applicability, and explain exclusions. Do not trigger remote CI through a push, mutate an external environment, run unsafe load, or touch production merely to satisfy the matrix; execute equivalent established local checks when possible. Browser automation must use `browser-skill:cyh-browser-skill`. Serialize checks that share a browser, simulator, device, database, dependency cache, build output, or other mutable resource.
+Use project instructions and impact analysis to decide applicability, and explain exclusions. Do not trigger remote CI through a push, mutate an external environment, run unsafe load, or touch production merely to satisfy the matrix; execute equivalent established local checks when possible. Browser automation must use the installed `cyh-browser-skill` through the active host mapping. Serialize checks that share a browser, simulator, device, database, dependency cache, build output, or other mutable resource.
 
 An applicable lane that is unavailable or requires new permission remains required and blocks completion; do not silently downgrade it to optional. Separate pre-existing failures from regressions, but a baseline failure in a required lane still prevents a passing result unless the Goal contract supplies an evidence-grounded disposition that preserves the intended acceptance meaning.
 

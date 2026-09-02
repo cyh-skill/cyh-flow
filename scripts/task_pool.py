@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
+import errno
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -13,6 +14,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
@@ -79,17 +81,69 @@ def markdown_label(value: Any) -> str:
     return one_line(value, fallback="用户截图").replace("[", "\\[").replace("]", "\\]")
 
 
+def _lock_backend_name() -> str:
+    return "windows" if os.name == "nt" else "unix"
+
+
+def _load_lock_module(name: str) -> Any:
+    return importlib.import_module(name)
+
+
+def _ensure_windows_lock_byte(lock_file: Any) -> None:
+    lock_file.seek(0, os.SEEK_END)
+    if lock_file.tell() == 0:
+        lock_file.write("\0")
+        lock_file.flush()
+        os.fsync(lock_file.fileno())
+    lock_file.seek(0)
+
+
+def _acquire_windows_lock(lock_file: Any, msvcrt: Any) -> None:
+    _ensure_windows_lock_byte(lock_file)
+    retryable = {errno.EACCES, errno.EAGAIN}
+    if hasattr(errno, "EDEADLK"):
+        retryable.add(errno.EDEADLK)
+    while True:
+        try:
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            return
+        except OSError as error:
+            if error.errno not in retryable:
+                raise
+            time.sleep(0.05)
+
+
 @contextmanager
-def pool_lock(pool: Path) -> Iterator[None]:
-    pool.mkdir(parents=True, exist_ok=True)
-    identity = hashlib.sha256(str(pool.resolve()).encode("utf-8")).hexdigest()[:24]
-    lock_path = Path(tempfile.gettempdir()) / f"cyh-flow-task-pool-{identity}.lock"
-    with lock_path.open("a+", encoding="utf-8") as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+def _exclusive_file_lock(lock_file: Any) -> Iterator[None]:
+    if _lock_backend_name() == "windows":
+        msvcrt = _load_lock_module("msvcrt")
+        _acquire_windows_lock(lock_file, msvcrt)
         try:
             yield
         finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+
+    fcntl = _load_lock_module("fcntl")
+    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    try:
+        yield
+    finally:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+@contextmanager
+def pool_lock(pool: Path) -> Iterator[None]:
+    pool.mkdir(parents=True, exist_ok=True)
+    resolved = str(pool.resolve())
+    if _lock_backend_name() == "windows":
+        resolved = os.path.normcase(resolved)
+    identity = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:24]
+    lock_path = Path(tempfile.gettempdir()) / f"cyh-flow-task-pool-{identity}.lock"
+    with lock_path.open("a+", encoding="utf-8") as lock_file:
+        with _exclusive_file_lock(lock_file):
+            yield
 
 
 def atomic_write(path: Path, content: str) -> None:

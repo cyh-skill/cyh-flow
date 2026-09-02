@@ -52,6 +52,11 @@ def b64url_decode(value: str) -> bytes:
     return base64.urlsafe_b64decode(value + padding)
 
 
+def display_git_path(value: bytes) -> str:
+    """Return a UTF-8-safe display form that escapes invalid raw bytes."""
+    return value.decode("utf-8", errors="backslashreplace")
+
+
 def run_git(repo: Path, args: Iterable[str]) -> bytes:
     completed = subprocess.run(
         ["git", "-C", os.fspath(repo), *args],
@@ -101,7 +106,7 @@ def read_path_bytes(path: bytes) -> tuple[bytes, str]:
         target = os.readlink(path)
         return (target if isinstance(target, bytes) else os.fsencode(target), "120000")
     if not stat.S_ISREG(info.st_mode):
-        raise SnapshotError(f"unsupported untracked entry type: {os.fsdecode(path)}")
+        raise SnapshotError(f"unsupported untracked entry type: {display_git_path(path)}")
     with open(path, "rb") as handle:
         content = handle.read()
     mode = "100755" if info.st_mode & 0o111 else "100644"
@@ -166,7 +171,7 @@ def submodule_entries(
                 status_sha256 = digest(status)
                 status_size = len(status)
                 if status:
-                    dirty.append(os.fsdecode(relative))
+                    dirty.append(display_git_path(relative))
             except SnapshotError:
                 worktree_head = None
                 status_sha256 = None
@@ -215,7 +220,7 @@ def changed_files(repo: Path, kind: str, base: str | None, head: str) -> list[st
             run_git(repo, ["diff", "--name-only", "-z", "--no-ext-diff", f"{base}...{head}"])
         ]
     raw_paths = {item for chunk in chunks for item in chunk.split(b"\0") if item}
-    return [os.fsdecode(item) for item in sorted(raw_paths, key=bytes)]
+    return [display_git_path(item) for item in sorted(raw_paths, key=bytes)]
 
 
 def build_target(
@@ -411,10 +416,21 @@ def freeze(args: argparse.Namespace) -> dict[str, Any]:
         write_private_bytes(output / "snapshot-meta.json", canonical_json(metadata))
         snapshot = create_snapshot(repo, output, metadata, artifact_data, untracked_paths)
         verify(argparse.Namespace(packet_dir=output))
-    except Exception:
+    except Exception as error:
         if args.output is None:
-            shutil.rmtree(output, ignore_errors=True)
-        raise
+            try:
+                shutil.rmtree(output)
+            except FileNotFoundError:
+                pass
+            except OSError as cleanup_error:
+                raise SnapshotError(
+                    "freeze failed and automatic packet cleanup failed at "
+                    f"{output}: {cleanup_error}; original error: {error}"
+                ) from error
+            raise
+        raise SnapshotError(
+            f"freeze failed; partial packet retained at {output}: {error}"
+        ) from error
     return {
         "changed_files": metadata["changed_files"],
         "dirty_submodules": metadata["dirty_submodules"],

@@ -1,6 +1,6 @@
 # Task-run mode
 
-Use this mode to independently claim and process stored work from `.cyh-flow/tasks/YYYY-MM-DD.md`. The Markdown task fields are the only persistent ownership and status record; there is no primary dispatcher, separate claim database, durable lock record, or claim token.
+Use this mode to independently claim and process stored work from `.cyh-flow/tasks/YYYY-MM-DD.md`. The Markdown task fields are the only persistent ownership and status record; there is no primary dispatcher, separate claim database, durable lock record, or claim token. Host Task tools or an agent-team board may mirror live progress when available, but never replace the document-backed claim or become an ownership authority.
 
 ## Launch claiming workers
 

@@ -1,6 +1,6 @@
 ---
 name: cyh-flow
-description: Run cyh-flow's explicitly invoked, subagent-first software-delivery workflow with strict authorization boundaries. Use only when the user invokes $cyh-flow for planning, implementation, review, repair, convergence, or repository task-pool work.
+description: Handle software-delivery work through cyh-flow with strict authorization boundaries. Use only when the user explicitly invokes $cyh-flow in Codex or /cyh-flow in Claude Code.
 ---
 
 # cyh-flow
@@ -9,21 +9,33 @@ Apply one consistent development workflow across repositories without hard-codin
 
 ## Invocation and mode
 
+Codex is the priority host and invokes this Skill as `$cyh-flow`. Claude Code invokes the personal Skill as `/cyh-flow`; a marketplace/plugin install uses the canonical namespaced form `/cyh-flow:cyh-flow`. Do not promise a bare alias for the plugin form. These are host UI invocations, not shell commands. Use the matching prefix in the forms below:
+
 The supported explicit forms are:
 
 ```text
-$cyh-flow plan <requirement or problem>
-$cyh-flow build <plan, issue, task, or requested change>
-$cyh-flow build auto <implementation-ready plan, issue, or requirement>
-$cyh-flow auto <implementation-ready plan, issue, or requirement>
-$cyh-flow review <working tree, branch, commit, or pull request>
-$cyh-flow fix <known bug, failing behavior, or review finding>
-$cyh-flow converge <objective and user-selected evidence lanes>
-$cyh-flow task-add <bugs, small changes, or follow-up work>
-$cyh-flow task-run [task ID or all eligible tasks]
+<cyh-flow> plan <requirement or problem>
+<cyh-flow> build <plan, issue, task, or requested change>
+<cyh-flow> build auto <implementation-ready plan, issue, or requirement>
+<cyh-flow> auto <implementation-ready plan, issue, or requirement>
+<cyh-flow> review <working tree, branch, commit, or pull request>
+<cyh-flow> fix <known bug, failing behavior, or review finding>
+<cyh-flow> converge <objective and user-selected evidence lanes>
+<cyh-flow> task-add <bugs, small changes, or follow-up work>
+<cyh-flow> task-run [task ID or all eligible tasks]
 ```
 
-`$cyh-flow` invokes this skill. Codex `/` commands are host controls, not custom aliases owned by this skill. A native `/plan` or `/review` may be used alongside the corresponding mode, and the native Goal mechanism hosts `build auto`, `converge`, and the sequential build and convergence phases of top-level `auto` when available; never claim that `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, `/task-run`, or `/cyh-flow` was installed.
+Native host commands are controls, not aliases owned by this Skill. Codex `/plan` or `/review` may be used alongside the corresponding workflow. Claude Code plan permission mode is useful for read-only investigation, but `cyh-flow plan` must exit or switch from that permission mode before its sole authorized mutation: creating or updating the canonical requirement document. Claude Code's native `/review` is not an alias for `cyh-flow review`. Never claim that cyh-flow installed those controls or a standalone `/build`, `/auto`, `/fix`, `/converge`, `/task-add`, or `/task-run` command.
+
+## Host capability mapping
+
+Preserve the same workflow contract on both hosts while using their real capabilities:
+
+- A `Goal` below means one outcome with an explicit completion gate. In Codex, use the native Goal API when available. In Claude Code, a user-activated `/goal` may provide the persistent across-turn loop, but it is a session-scoped prompt-based Stop hook, not the Codex create/get/update Goal API; use Claude Code Task tools for live phases and dependencies when available, and keep the repository-local ledger named by the mode as the durable cross-host resume authority. If no native goal loop is active, continue within the current run and preserve the ledger cursor for a later explicit resume rather than claiming persistence that the host does not provide.
+- A `subagent` means an isolated worker created by the host: Codex agent tools or Claude Code `Agent`. Use the maximum useful conflict-free concurrency that the host actually exposes. If concurrent workers are unavailable, run the same independent lanes sequentially in fresh isolated contexts when possible; never drop a required lane or call one context multiple independent reviewers.
+- Addressable worker mailboxes and follow-up turns are capability-gated, not a cross-host assumption. Codex exposes them directly. Claude Code may expose `SendMessage` and shared team coordination only when the user has already enabled experimental agent teams; use them when available, but never enable that experiment as a Skill side effect. A review run without addressable follow-up delivery finishes all four specialist lanes first and then starts a fresh master with the frozen packet and terminal lane records; it does not overlap the master precheck.
+- Claude Code Task tools and experimental agent teams are optional orchestration facilities, not authorization. Standard `Agent` subagents are sufficient for independent lanes; never change settings, enable experimental teams, or replace an active `/goal` unless the user explicitly authorizes that host action.
+- Host-specific tool names are examples of capabilities, not universal identifiers. Use the official or user-required equivalent available in the active host, preserve all side-effect boundaries, and report a required unavailable capability as blocked.
 
 Use an explicit `plan`, `build`, `auto`, `review`, `fix`, `converge`, `task-add`, or `task-run` argument when present. Otherwise infer the mode conservatively:
 
@@ -54,12 +66,12 @@ Read exactly one primary mode reference before acting. Load another reference on
 Before mode-specific work:
 
 1. Resolve the real repository or repositories in scope, including parent repositories, submodules, and worktrees. Do not assume the current directory is the target.
-2. Read applicable `AGENTS.md` files and repository documentation. Project instructions override this skill where they are more specific and do not violate user or system instructions.
+2. Read applicable host and project instructions, including `AGENTS.md`, `CLAUDE.md`, and repository documentation. Project instructions override this skill where they are more specific and do not violate user or system instructions.
 3. Inspect the working tree before any mutation and preserve unrelated tracked and untracked changes.
 4. Prefer an applicable Skill, then MCP or built-in tools. When comparable capabilities exist, prefer official or vendor-maintained Skills, Plugins, and MCP integrations without removing personal capabilities as a side effect.
 5. If `.codegraph/` exists and CodeGraph is available, prefer it for architecture, dependency, and call-path discovery. Do not modify or rebuild its index unless needed and authorized.
 6. For GitHub, use the authenticated `gh` CLI by default. Re-read live PR heads, reviews, checks, and refs before relying on them.
-7. For browser automation, use `browser-skill:cyh-browser-skill`. Ordinary public web research should use the normal web-search path.
+7. For browser automation, use the installed `cyh-browser-skill`: Codex exposes it as `browser-skill:cyh-browser-skill`, while Claude Code's plugin form is `/browser-skill:cyh-browser-skill`. Ordinary public web research should use the host's normal static search path. If the required browser Skill is unavailable, report the browser lane as blocked rather than substituting another automation system.
 
 If the target, authorization, or destructive scope remains materially ambiguous after safe inspection, stop and ask one concise question.
 

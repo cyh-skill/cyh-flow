@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "cyh-flow",
+  "owner": {
+    "name": "cyh-skill"
+  },
+  "metadata": {
+    "description": "Codex-first software-delivery workflow with Claude Code compatibility"
+  },
+  "plugins": [
+    {
+      "name": "cyh-flow",
+      "description": "Plan, build, review, repair, converge, and process repository task pools with explicit authorization boundaries",
+      "source": "./",
+      "category": "development",
+      "tags": ["workflow", "planning", "review", "delivery", "subagents"]
+    }
+  ]
+}

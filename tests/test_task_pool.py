@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import base64
+import errno
+import importlib.util
 import json
 import stat
 import subprocess
@@ -9,12 +11,26 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "task_pool.py"
 ONE_PIXEL_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 )
+
+
+def load_task_pool_module():
+    spec = importlib.util.spec_from_file_location("cyh_flow_task_pool", SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("unable to load task_pool.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+TASK_POOL = load_task_pool_module()
 
 
 class TaskPoolTest(unittest.TestCase):
@@ -98,6 +114,7 @@ class TaskPoolTest(unittest.TestCase):
         document = self.pool / "2026-09-01.md"
         document.write_text("# Task Pool · 2026-09-01\n", encoding="utf-8")
         document.chmod(0o640)
+        expected_mode = stat.S_IMODE(document.stat().st_mode)
 
         result = self.run_cli(
             "add",
@@ -109,7 +126,7 @@ class TaskPoolTest(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(stat.S_IMODE(document.stat().st_mode), 0o640)
+        self.assertEqual(stat.S_IMODE(document.stat().st_mode), expected_mode)
 
     def test_concurrent_agents_claim_unique_tasks(self) -> None:
         task_ids = set(self.add_tasks(8))
@@ -133,6 +150,67 @@ class TaskPoolTest(unittest.TestCase):
         tasks = json.loads(listed.stdout)["tasks"]
         self.assertEqual(len(tasks), 8)
         self.assertEqual(len({task["owner"] for task in tasks}), 8)
+
+    def test_unix_lock_backend_retains_flock_contract(self) -> None:
+        calls: list[tuple[int, int]] = []
+        fake_fcntl = SimpleNamespace(
+            LOCK_EX=1,
+            LOCK_UN=2,
+            flock=lambda descriptor, operation: calls.append((descriptor, operation)),
+        )
+        lock_path = self.root / "unix.lock"
+
+        with lock_path.open("a+", encoding="utf-8") as lock_file:
+            with mock.patch.object(TASK_POOL, "_lock_backend_name", return_value="unix"):
+                with mock.patch.object(TASK_POOL, "_load_lock_module", return_value=fake_fcntl):
+                    with TASK_POOL._exclusive_file_lock(lock_file):
+                        self.assertEqual(calls, [(lock_file.fileno(), fake_fcntl.LOCK_EX)])
+
+        self.assertEqual(
+            calls,
+            [
+                (calls[0][0], fake_fcntl.LOCK_EX),
+                (calls[0][0], fake_fcntl.LOCK_UN),
+            ],
+        )
+
+    def test_windows_lock_backend_imports_msvcrt_retries_and_unlocks(self) -> None:
+        calls: list[tuple[int, int, int]] = []
+        attempts = 0
+
+        def locking(descriptor: int, operation: int, size: int) -> None:
+            nonlocal attempts
+            calls.append((descriptor, operation, size))
+            if operation == 11:
+                attempts += 1
+                if attempts == 1:
+                    raise OSError(errno.EACCES, "lock is held")
+
+        fake_msvcrt = SimpleNamespace(LK_NBLCK=11, LK_UNLCK=12, locking=locking)
+        lock_path = self.root / "windows.lock"
+
+        with lock_path.open("a+", encoding="utf-8") as lock_file:
+            with mock.patch.object(TASK_POOL, "_lock_backend_name", return_value="windows"):
+                with mock.patch.object(
+                    TASK_POOL, "_load_lock_module", return_value=fake_msvcrt
+                ) as load_module:
+                    with mock.patch.object(TASK_POOL.time, "sleep") as sleep:
+                        with TASK_POOL._exclusive_file_lock(lock_file):
+                            self.assertEqual(lock_path.stat().st_size, 1)
+                            self.assertEqual(lock_file.tell(), 0)
+
+            load_module.assert_called_once_with("msvcrt")
+            sleep.assert_called_once_with(0.05)
+
+        descriptor = calls[0][0]
+        self.assertEqual(
+            calls,
+            [
+                (descriptor, fake_msvcrt.LK_NBLCK, 1),
+                (descriptor, fake_msvcrt.LK_NBLCK, 1),
+                (descriptor, fake_msvcrt.LK_UNLCK, 1),
+            ],
+        )
 
     def test_claim_preserves_backslashes_in_agent_identity(self) -> None:
         task_id = self.add_tasks(1)[0]

@@ -2,6 +2,8 @@
 
 Use this mode to understand a requested change and maintain one unified requirement plan that covers both what the system must do and how the current system will implement and validate it. Application code, configuration, Git state, and external systems stay read-only; creating or updating that requirement document is the only mutation authorized by entering plan mode.
 
+Claude Code's native plan permission mode may be used for the read-only investigation portion, but it is not a complete implementation of `cyh-flow plan`: switch back to an editing-capable permission mode before the coordinator creates or updates the canonical requirement document. Do not weaken the required document handoff or claim it was persisted while the host is still enforcing read-only access.
+
 ## Canonical requirement document
 
 Every requirement decision made during plan mode must be recorded in the canonical document, not left only in chat. The document must fulfill both specification and implementation-planning responsibilities as one integrated deliverable; do not model them as separately maintained artifacts or require separate `Spec` and `Plan` sections, and do not create `*-spec.md` and `*-plan.md` files for the same requirement. A decision includes confirmed scope and non-goals, chosen behavior or contract, accepted trade-offs, implementation direction, compatibility or migration treatment, and acceptance criteria. Keep proposals, assumptions, unresolved questions, and confirmed decisions visibly distinct so an unapproved option is never recorded as settled.

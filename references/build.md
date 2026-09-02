@@ -6,10 +6,10 @@ Build is an execution workflow, not a review workflow. Implement, test, build, a
 
 ## Modes
 
-- `$cyh-flow build <source>` executes the concrete implementation scope with the maximum useful subagent concurrency, but stops at the first material unexpected problem instead of diagnosing, repairing, or continuing past it autonomously. It does not create a Goal or issue ledger.
-- `$cyh-flow build auto <source>` executes the same kind of implementation scope and parallel task graph, but creates a Goal, uses the coordinator's best evidence-grounded judgment to make in-scope decisions, records every intermediate problem and automatic decision in a local ledger for later human review, and keeps resolving problems or running unaffected dependency-ready work without pausing between safe steps. The `auto` invocation itself delegates these in-scope decisions and continuation; it does not authorize external mutations.
+- `<cyh-flow> build <source>` executes the concrete implementation scope with the maximum useful subagent concurrency, but stops at the first material unexpected problem instead of diagnosing, repairing, or continuing past it autonomously. It does not create a Goal or issue ledger.
+- `<cyh-flow> build auto <source>` executes the same kind of implementation scope and parallel task graph, but creates a Goal using the host mapping in the canonical Skill, uses the coordinator's best evidence-grounded judgment to make in-scope decisions, records every intermediate problem and automatic decision in a local ledger for later human review, and keeps resolving problems or running unaffected dependency-ready work without pausing between safe steps. The `auto` invocation itself delegates these in-scope decisions and continuation; it does not authorize external mutations.
 
-Treat only the explicit first argument `auto` after `build` as auto mode. Do not infer auto mode merely because the request is large, asks for speed, or contains several tasks. Top-level `$cyh-flow auto` is a separate full-pipeline mode whose reference explicitly enters this build-auto phase before convergence; it is not an inferred alias for `$cyh-flow build auto`.
+Treat only the explicit first argument `auto` after `build` as auto mode. Do not infer auto mode merely because the request is large, asks for speed, or contains several tasks. Top-level `<cyh-flow> auto` is a separate full-pipeline mode whose reference explicitly enters this build-auto phase before convergence; it is not an inferred alias for `<cyh-flow> build auto`.
 
 ## Before editing
 
@@ -39,7 +39,7 @@ This is execution parallelism only. Do not assign a worker to code review, adver
 
 ## Auto Goal and local decision ledger
 
-At the start of auto mode, create one native Goal whose objective names the source of truth, repositories, intended outcome, and executable completion gate. Do not set a token budget unless the user explicitly supplied one. Resume an existing unfinished Goal only when it is the same build objective; if an unrelated unfinished Goal prevents creation, stop and ask the user rather than replacing it.
+At the start of auto mode, establish one Goal whose objective names the source of truth, repositories, intended outcome, and executable completion gate, using the active host's capability mapping. Do not set a token budget unless the user explicitly supplied one. Resume an existing unfinished Goal only when it is the same build objective; if an unrelated unfinished Goal prevents creation, stop and ask the user rather than replacing it. On Claude Code, do not claim that the Skill programmatically activated `/goal`: use it only when the user has activated it, mirror live work in Task tools when available, and always persist the resume cursor in the ledger.
 
 Create or resume one repository-local Markdown ledger before dispatching implementation. It is both the issue history and the automatic-decision review queue. Follow an existing project convention when one exists; otherwise use `.cyh-flow/build/<stable-goal-slug>.md` in the coordinating repository. Reuse the same stable path for later auto invocations of the same Goal. Keep the ledger local and unstaged unless the user explicitly asks to deliver it; do not add ignore rules as a side effect. For work spanning repositories, keep one coordinating ledger and name the repository in every task, problem, and decision record.
 
