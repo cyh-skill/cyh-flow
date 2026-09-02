@@ -40,18 +40,18 @@ Execute the selected evidence lanes against the starting target far enough to es
 
 Add only reproducible or independently supported findings. Keep unrelated baseline failures separate, and keep blocked findings open rather than hiding them. The initiating failure must be reproduced when safe, tied to trustworthy evidence, or disposed of with a documented causal explanation; an empty ledger is not completion when the original problem remains unexplained.
 
-When the selected lane is full code review, load [review.md](review.md) and use its frozen target, four independent specialist reviewers, master recheck, and clean gate. When browser automation is selected, use the installed `cyh-browser-skill` through the active host mapping; ordinary static public research is not browser acceptance. For simulator or device testing, prefer the project's established tooling and official or vendor-maintained capabilities. Do not write production data or external systems without separate authorization.
+When the selected lane is full code review, load [review.md](review.md) and use its four independent live specialist reviewers, master recheck, and evidence-bounded clean gate. When browser automation is selected, use the installed `cyh-browser-skill` through the active host mapping; ordinary static public research is not browser acceptance. For simulator or device testing, prefer the project's established tooling and official or vendor-maintained capabilities. Do not write production data or external systems without separate authorization.
 
 ## Repair and recheck loop
 
-Use one mutually exclusive writer for the entire Goal. Parallel agents inspect code, analyze logs, exercise non-conflicting evidence lanes, or review frozen targets, but they remain read-only against the shared repository and must not share writer ownership.
+Use one mutually exclusive writer for the entire Goal. Parallel agents inspect code, analyze logs, exercise non-conflicting evidence lanes, or review the current target, but they remain read-only against the shared repository and must not share writer ownership.
 
 Repeat:
 
 1. Verify each new claim and consolidate duplicates by root cause; reject unsupported claims with a reason.
 2. Repair supported findings in dependency order with the smallest coherent root-cause correction that satisfies the real contract.
 3. Run focused rechecks inside the user-required evidence lanes after each coherent change and separate introduced failures from the baseline. Do not automatically add routine unit, type, lint, build, review, browser, or device checks that the user did not select. An extra diagnostic may run only when needed to understand or repair the selected flow; it does not become a completion lane without user acceptance, although any concrete in-scope defect it proves must still enter the ledger.
-4. Freeze the complete new target, including intentional untracked deliverables.
+4. Inspect the complete current target, including intentional untracked deliverables.
 5. Rerun every required evidence lane whose prior result could have been invalidated. Do not reuse a clean review, passing simulator run, browser result, benchmark, or test result from before the relevant change.
 6. Add newly discovered supported findings to the ledger and continue until the latest complete round leaves none open.
 

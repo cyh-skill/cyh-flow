@@ -8,7 +8,7 @@
    +-- plan   -> 只读调查 -> 统一需求方案文档 -> 可执行方案
    +-- build  -> 多 Agent 实现/验证 -> 普通：问题/决策点即停；auto：AI 决策 + 台账后继续
    +-- auto   -> build auto 跑到底 -> converge 所有适用 Review/测试 -> finding 归零
-   +-- review -> 冻结快照 -> 四路举证 + 主预检并行 -> 主动证伪裁决 -> 立即交付
+   +-- review -> 四路即时独立审查 + 主审独立读取 -> 主动证伪裁决 -> 立即交付
    +-- fix      -> 修复一个明确问题 -> 针对性验证
    +-- converge -> Goal: 复查/测试 -> 修复 -> 重验 -> finding 归零
    +-- task-add -> 分析一批事项 -> 按天归档 Markdown + 截图
@@ -22,7 +22,7 @@
 | `plan` | 统一定义需求行为、实现方式和验收路径 | 多个只读 sub-Agent 并行调查代码、契约、数据、测试和平台面；主 Agent 单写一份同时承担 Spec 与 Plan 职责的需求 `.md` | 子 Agent 写应用代码或竞争写需求文档、把同一需求拆成多份决策文档、建分支、提交、推送、部署或更新外部系统 |
 | `build` | 实现明确需求、计划、Issue 或产品变更；`auto` 由 AI 自动决策并持续执行 | 在约定范围内修改本地文件，尽可能拆分多 Agent 实现/验证并运行验收；auto 建立 Goal，把中间问题和自动决策写入本地台账供人工 Review | Build 内启动代码 Review、普通 build 遇到问题或决策点后继续、auto 擅自扩大范围或执行高风险操作、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `auto` | 无人值守完成明确实现，并把结果收敛到所有适用 Review 和测试通过 | 串行建立 Build 与 Converge 两个 Goal，先按 `build auto` 完成实现，再以四路 Review、项目既有自动化检查及受影响平台流程为必需证据持续修复和重验 | 跳过必需证据、并行运行两个 Goal、未经明确要求的提交、推送、PR、部署、生产或外部写入、破坏性操作 |
-| `review` | 审查工作区、分支、提交或 Pull Request，判断是否以最优实现覆盖完整关联面 | GitHub PR 先用已认证 `gh` 解析精确远端 SHA，本地 checkout 不适合时自动改用系统临时目录中的隔离 clone；随后用确定性脚本冻结目标，四路收集满足准入门槛的候选证据，主审逐条尝试证伪后才定结论；用户显式给出他人 GitHub PR 链接时，完整 Review 后自动发布并回读一次普通 PR 评论 | 因本地脏工作树或无关分支阻塞远端 PR Review、为了 Review 切换当前 checkout、把静态怀疑直接升级为 finding、用 reviewer 数量提高置信度、直接修复、自动等待或重跑、提交、推送、批准、请求修改、Resolve thread、Merge，或对本人 PR、推断目标和不完整 Review 自动发评论 |
+| `review` | 审查工作区、分支、提交或 Pull Request，判断是否以最优实现覆盖完整关联面 | GitHub PR 使用已认证 `gh`；四个 specialist 只拿目标入口与只读边界，各自读取当下 Diff、上下文、需求和调用面，主审再独立读取当下目标并逐条尝试证伪；不冻结、不锁定、不校验漂移，目标中途变化也照常完成；用户显式给出他人 GitHub PR 链接时，完整 Review 后自动发布并回读一次普通 PR 评论 | 因本地脏工作树或无关分支阻塞远端 PR Review、为了 Review 切换当前 checkout、把静态怀疑直接升级为 finding、用 reviewer 数量提高置信度、直接修复、自动等待或重跑、提交、推送、批准、请求修改、Resolve thread、Merge，或对本人 PR、推断目标和不完整 Review 自动发评论 |
 | `fix` | 一次性修复明确 bug、失败行为或 Review finding | 多个只读 sub-Agent 并行定位根因、契约和验证面，由一个写者完成范围内修复与针对性验证 | 多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、PR、部署或外部写入 |
 | `converge` | 持续发现、修复并复查问题，直到目标范围内 finding 归零 | 建立 Goal 和 finding 台账，把用户定义的 Review、自动化测试、设备、Web、运行时、安全或性能证据通道尽可能拆给并行 sub-Agent，由一个写者修复 | 多修复写者竞争、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `task-add` | 批量收录 bug、小改动、杂项或后续工作 | 多个只读 sub-Agent 拆分事项和截图证据，主 Agent 去重后单写 `.cyh-flow/tasks/YYYY-MM-DD.md` 并原样保存截图 | 子 Agent 修改应用代码、竞争写任务池、领取或处理任务、提交、推送或外部写入 |
@@ -167,17 +167,15 @@ cyh-flow/
 |-- claude/skills/cyh-flow/
 |   `-- SKILL.md             # Claude 显式调用 wrapper 与宿主降级入口
 |-- scripts/
-|   |-- review_snapshot.py   # 冻结、验证并比较实时 Review 目标
 |   `-- task_pool.py         # Markdown 任务入池、原子领取与状态更新
 |-- tests/
 |   |-- test_host_compat.py  # 双宿主 manifest、入口与链接契约
-|   |-- test_review_snapshot.py # 快照复现、漂移隔离与破坏检测
 |   `-- test_task_pool.py    # 截图保留、并发领取和状态流转验证
 `-- references/
     |-- plan.md              # 只读调查与统一需求方案文档标准
     |-- build.md             # 多 Agent 执行、普通停止策略与 auto AI 决策审计台账
     |-- auto.md              # build auto 到全证据 converge 的无人值守编排
-    |-- review.md            # 不可变快照、四路并行、重叠主复查与 clean gate
+    |-- review.md            # 即时四路独立审查、主复查与 evidence-bounded clean gate
     |-- review/              # 公共契约、四种 reviewer 人格与主复查角色
     |-- fix.md               # 一次性问题修复与针对性验证
     |-- converge.md          # Goal、跨证据通道复查与 finding-zero 收敛

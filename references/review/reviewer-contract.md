@@ -1,63 +1,36 @@
 # Parallel reviewer contract
 
-This contract keeps four independent reviewer personalities comparable without erasing their different lenses. Every specialist is read-only, receives the same immutable target, and returns claims for a later master to verify.
+This contract keeps four independent reviewer personalities comparable without erasing their different lenses. Every specialist is read-only, resolves the current review target for itself, and returns claims for a later master to verify.
 
-## Review packet
+## Review input
 
-The coordinator supplies:
+The coordinator supplies only the minimum routing context:
 
-- `target_id`: `sha256:<hex>` fingerprint of the exact canonical target-manifest artifact described below.
-- `repo_root`, immutable `snapshot_root`, retained `packet_dir`, and `target_kind`: local changes, commit, branch, PR, or explicit range.
-- `base_sha`, `head_sha`, and `merge_base_sha` when applicable; use explicit `null` rather than guessing.
-- `changed_files`, exact references to the retained diff artifacts, and copied content plus hashes for relevant untracked files; mutable commands are not a substitute for the frozen artifacts.
-- `requirement`: fact-only user intent, issue, plan, PR description, or `unknown`, with source provenance and the resulting limitation.
-- `scope_decisions`: explicit accepted, rejected, deferred, or out-of-scope decisions with provenance; use an empty list rather than inventing one.
-- `project_instructions`, repository constraints, a fact-only impact seed, known unknowns, and allowed non-mutating checks. The packet must not contain provisional findings, severity, confidence, or repair advice that could anchor the lanes.
+- `target`: the user-supplied working tree, branch, commit, range, or pull-request locator;
+- repository access information when the target cannot otherwise be reached safely;
+- explicit user intent or requirement text already present in the request, if any;
+- applicable project instructions and the read-only side-effect boundary.
 
-The coordinator invokes `scripts/review_snapshot.py freeze`, which alone serializes the manifest as RFC 8785 JSON Canonicalization Scheme (JCS): UTF-8 without a BOM, lexicographically sorted object keys, canonical JSON numbers, and explicit JSON `null` for inapplicable fields. Do not reproduce this logic in an ad hoc command. The script uses this exact schema and no additional keys:
+Do not supply a coordinator-generated diff summary, changed-file shortlist, architecture conclusion, suspicious location, candidate finding, severity, confidence, repair advice, another reviewer's output, or a shared verdict. Each specialist independently reads the current diff, surrounding code, repository instructions, requirement sources, history, callers, contracts, tests, configuration, and checks material to its own lens.
 
-```json
-{
-  "artifacts": [
-    {"kind": "cached_diff | committed_diff | unstaged_diff", "length": 0, "sha256": "lowercase hex"}
-  ],
-  "base_sha": null,
-  "entries": [
-    {"kind": "submodule | untracked", "mode": "git octal mode", "path_b64url": "raw repository-relative path bytes", "sha256": "lowercase hex", "size": 0}
-  ],
-  "format": "cyh-review-target/v1",
-  "head_sha": "full object id",
-  "merge_base_sha": null,
-  "repository_roots": ["full root commit object id"],
-  "target_kind": "local | commit | branch | pr | range"
-}
-```
+The target is live and best-effort. Do not freeze, pin, fingerprint, copy, hash, verify, compare, or monitor it. Do not wait for the worktree, branch, or pull request to become stable, and do not restart merely because it changes. Different reviewers and the master may observe different revisions; that is an accepted limitation, not an invalid run. Report only evidence actually inspected and do not claim that the result covers a later or final revision.
 
-Encode `path_b64url` with unpadded RFC 4648 base64url over the raw Git path bytes. Sort `repository_roots` by lowercase object-id bytes, `artifacts` by `kind`, and `entries` first by decoded raw path bytes and then by `kind` before JCS serialization. Derive `repository_roots` from the root commits reachable from the fixed `head_sha` or local `HEAD`; this intentionally identifies forks with identical reachable history as the same content lineage. All sizes are byte counts and all object IDs retain the repository's full hash width.
-
-The example shows `null` where a field is inapplicable; otherwise every SHA field contains the full immutable object ID.
-
-For a committed range or PR, include fixed base, head, and merge-base SHAs plus the length and SHA-256 of the exact raw `git diff --binary --full-index --no-ext-diff <base>...<head>` artifact as `committed_diff`. For local changes, include the current `HEAD`, separate lengths and SHA-256 values for the exact raw unstaged and cached diff artifacts, and every relevant untracked or submodule entry with mode, size, and content or state SHA-256. Do not normalize paths, content, or line endings. Set `target_id` to `sha256:` plus the lowercase SHA-256 of the exact JCS manifest bytes.
-
-Retain the exact manifest, every referenced diff artifact, copied untracked content, submodule state records, and detached snapshot beside the packet. Every lane and the master invoke `scripts/review_snapshot.py verify` once and inspect that snapshot; they do not regenerate the serialization, rehash the mutable checkout, or resolve a mutable PR number, branch name, or tag.
-
-Before analyzing, verify the retained packet identity. Return `invalid` if a retained artifact or snapshot is corrupted, missing, mismatched, or cannot be reproduced. A later source-worktree edit or moving branch/PR ref is live drift, not packet drift: keep reviewing the immutable snapshot and let the coordinator report staleness at delivery. Never silently switch to a nearby branch, newer PR head, incomplete local diff, regenerated manifest, or current source file.
+For GitHub targets, use authenticated `gh` for PR metadata, diff, reviews, checks, and repository access. Choose the cheapest safe way to read enough surrounding source; use a disposable clone only when necessary, and never change the user's checkout just to represent a PR.
 
 ## Boundaries
 
 - Do not edit source, apply fixes, commit, push, post comments, approve, resolve threads, change PR state, or merge.
 - Do not spawn another agent or invoke a recursive top-level review command.
 - Keep other specialist reports hidden so the lanes remain independent.
-- Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Checks that write caches or generated output may run only in an exact coordinator-created system temporary directory or disposable repository copy, using already-available dependencies; never install packages during review.
-- Batch independent reads, searches, history queries, and checks within each bounded investigation stage. Read the packet, this contract, the role, and packet verification result once; do not spend later turns rereading unchanged control files or manually repeating deterministic hashes.
-- Reuse coordinator-retained shared check evidence when its target, command, environment, and output digest match the packet. Rerun only a focused check whose result is necessary to verify a candidate.
-- Candidates must be introduced by or materially exposed by the reviewed target. Put pre-existing concerns in coverage and unsupported hypotheses in `open_questions`, not `candidates`.
+- Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Checks that write caches or generated output may run only in a coordinator-approved system temporary directory or disposable repository copy using already-available dependencies; never install packages during review.
+- Batch independent reads, searches, history queries, and checks within each bounded investigation stage. Use adaptive sequential investigation only when one result genuinely determines the next query.
+- Candidates must be introduced by or materially exposed by the target as the reviewer observed it. Put pre-existing concerns in coverage and unsupported hypotheses in `open_questions`, not `candidates`.
 
 ## Candidate admission
 
 The first round discovers and substantiates candidates; it does not produce final findings. A changed condition, enum member, frontend button, nearby pattern, or plausible consequence is a hypothesis rather than proof. Before admitting a candidate, fill every gate below with `passed`, `failed`, `unknown`, or `not_applicable` plus concrete evidence:
 
-- `introduced_by_target`: compare the frozen target with its baseline and identify the exact introduced or materially exposed behavior. This gate is always required and cannot be `not_applicable`.
+- `introduced_by_target`: compare the observed target with its available baseline and identify the exact introduced or materially exposed behavior. This gate is always required and cannot be `not_applicable`.
 - `business_reachability`: trace a real entry point to the behavior. A state-dependent claim also needs a producer, persisted legacy path, fixture, test, runtime record, or authoritative contract that can create the state; a conditional branch or enum value alone does not pass.
 - `authoritative_contract`: inspect the source of truth when semantics cross a boundary. Authorization claims must trace the UI, API request, backend enforcement or FSM, and relevant multi-role behavior; a frontend gate is not the authorization authority.
 - `scope_decision`: inspect available user intent, issue or plan history, and explicit accepted, rejected, deferred, or out-of-scope decisions. `not_applicable` is allowed only after recording which available sources were checked.
@@ -75,8 +48,8 @@ Return one JSON object and no prose outside it:
 {
   "reviewer": "role-id",
   "source": "upstream source URL",
-  "target_id": "packet target_id",
-  "status": "completed | blocked | invalid",
+  "target": "user-supplied target locator",
+  "status": "completed | blocked",
   "terminal_reason": null,
   "coverage": {
     "paths": ["path or symbol inspected"],
@@ -130,15 +103,15 @@ Return one JSON object and no prose outside it:
 
 Use empty `candidates` and `open_questions` arrays when appropriate. Do not promote an open question to make the report look useful, and do not assign it severity or a repair. `native_severity`, `confidence`, and `fix_direction` on an admitted candidate remain untrusted specialist proposals; the master ignores them until independent falsification is complete. Keep source-native details that do not fit the common fields inside `evidence`.
 
-Set `terminal_reason` to `null` for a completed lane. For `blocked` or `invalid`, provide the precise reason there and keep any partially completed inspection in `coverage`.
+Set `terminal_reason` to `null` for a completed lane. For `blocked`, provide the precise reason there and keep any partially completed inspection in `coverage`.
 
 If malformed output cannot be corrected, the coordinator records it with this terminal transport schema; it is an execution artifact, not a substitute reviewer report:
 
 ```json
 {
   "reviewer": "role-id",
-  "target_id": "packet target_id",
-  "terminal_status": "blocked | invalid | malformed",
+  "target": "user-supplied target locator",
+  "terminal_status": "blocked | malformed",
   "attempt_count": 2,
   "validation_errors": ["precise schema or execution error"],
   "raw_output_sha256": "sha256:<hex>",
