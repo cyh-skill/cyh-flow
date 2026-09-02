@@ -22,7 +22,7 @@ For GitHub targets, use authenticated `gh` for PR metadata, diff, reviews, check
 - Do not edit source, apply fixes, commit, push, post comments, approve, resolve threads, change PR state, or merge.
 - Do not spawn another agent or invoke a recursive top-level review command.
 - Keep other specialist reports hidden so the lanes remain independent.
-- Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Checks that write caches or generated output may run only in a coordinator-approved system temporary directory or disposable repository copy using already-available dependencies; never install packages during review.
+- Do not change the target worktree, index, git metadata, dependencies, user configuration, remote services, browser state, infrastructure, or production data. Never run a complete unit, integration, end-to-end, lint, typecheck, build, migration, or platform suite. Run only the smallest candidate-specific non-mutating reproduction or check needed for admission; anything that writes caches or generated output must stay in a coordinator-approved system temporary directory or disposable repository copy using already-available dependencies. Never install packages during review.
 - Batch independent reads, searches, history queries, and checks within each bounded investigation stage. Use adaptive sequential investigation only when one result genuinely determines the next query.
 - Candidates must be introduced by or materially exposed by the target as the reviewer observed it. Put pre-existing concerns in coverage and unsupported hypotheses in `open_questions`, not `candidates`.
 
@@ -38,7 +38,7 @@ The first round discovers and substantiates candidates; it does not produce fina
 
 Before marking a gate `passed`, actively test the nearest plausible counter-hypothesis: an alternate producer, unreachable business path, backend rejection, different role behavior, preserved legacy route, explicit scope decision, or different owning component. Record those checks in a non-empty `counterevidence_checked` list. If required counterevidence cannot be inspected, that gate is `unknown`, not `passed`.
 
-All applicable gates must be `passed` before an item enters `candidates`. Put a plausible item with any required `unknown` gate in `open_questions` without severity or repair advice. Omit a disproved hypothesis or record the disproof in coverage. Performance candidates may pass reachability and impact with a mechanically proven scale bound; complexity candidates must prove behavioral equivalence and repository ownership fit.
+All applicable gates must be `passed` before an item enters `candidates`. Put a plausible item with any required `unknown` gate in `open_questions` without severity or repair advice. Omit a disproved hypothesis or record the disproof in coverage. Complexity candidates must prove behavioral equivalence and repository ownership fit. Integration-reliability candidates must trace the changed producer through an actual consumer and the nearest material failure, retry, compatibility, or partial-success path; generic architecture preferences are not candidates.
 
 ## Specialist result
 
@@ -69,8 +69,8 @@ Return one JSON object and no prose outside it:
       "id": "role-local stable id",
       "title": "specific candidate claim",
       "native_severity": "source lens severity",
-      "category": "correctness | complexity | security | performance",
-      "claim_type": "local-behavior | state-dependent | cross-boundary | authorization | performance | complexity",
+      "category": "correctness | complexity | security | performance | integration",
+      "claim_type": "local-behavior | state-dependent | cross-boundary | authorization | performance | complexity | reliability",
       "path": "repository-relative path",
       "line_start": 1,
       "line_end": 1,

@@ -96,6 +96,7 @@ class HostCompatibilityTests(unittest.TestCase):
         review_auto = (ROOT / "references" / "review-auto.md").read_text(
             encoding="utf-8"
         )
+        review_watcher = ROOT / "scripts" / "review_watch.py"
 
         self.assertIn("not the Codex create/get/update Goal API", root_skill)
         self.assertIn("experimental agent teams", root_skill)
@@ -104,6 +105,21 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("<cyh-flow> review auto", root_skill)
         self.assertIn("review-auto.md", review)
         self.assertIn("latest completed review cycle is clean", review_auto)
+        self.assertIn("scripts/review_watch.py", review_auto)
+        self.assertIn("Never run the repository's complete unit", review)
+        self.assertIn("integration-reliability", review)
+        self.assertNotIn("performance-engineer", review)
+        self.assertTrue(
+            (ROOT / "references" / "review" / "integration-reviewer.md").is_file()
+        )
+        self.assertFalse(
+            (ROOT / "references" / "review" / "performance-reviewer.md").exists()
+        )
+        self.assertNotIn("--watch-checks", review_auto)
+        self.assertNotIn(
+            "--watch-checks", review_watcher.read_text(encoding="utf-8")
+        )
+        self.assertTrue(review_watcher.is_file())
         self.assertIn("Never merge a PR", review_auto)
         for path in (ROOT / "references").rglob("*.md"):
             self.assertNotIn("$cyh-flow", path.read_text(encoding="utf-8"), path)

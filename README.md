@@ -22,7 +22,7 @@
 | `plan` | 统一定义需求行为、实现方式和验收路径 | 多个只读 sub-Agent 并行调查代码、契约、数据、测试和平台面；主 Agent 单写一份同时承担 Spec 与 Plan 职责的需求 `.md` | 子 Agent 写应用代码或竞争写需求文档、把同一需求拆成多份决策文档、建分支、提交、推送、部署或更新外部系统 |
 | `build` | 实现明确需求、计划、Issue 或产品变更；`auto` 由 AI 自动决策并持续执行 | 在约定范围内修改本地文件，尽可能拆分多 Agent 实现/验证并运行验收；auto 建立 Goal，把中间问题和自动决策写入本地台账供人工 Review | Build 内启动代码 Review、普通 build 遇到问题或决策点后继续、auto 擅自扩大范围或执行高风险操作、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `auto` | 无人值守完成明确实现，并把结果收敛到所有适用 Review 和测试通过 | 串行建立 Build 与 Converge 两个 Goal，先按 `build auto` 完成实现，再以四路 Review、项目既有自动化检查及受影响平台流程为必需证据持续修复和重验 | 跳过必需证据、并行运行两个 Goal、未经明确要求的提交、推送、PR、部署、生产或外部写入、破坏性操作 |
-| `review` | 审查工作区、分支、提交或 Pull Request；显式 `review auto` 无人值守跟进 GitHub PR | GitHub PR 使用已认证 `gh`；每轮由四个 specialist 独立读取实时 Diff、上下文、需求和调用面，fresh master 再证伪裁决；普通模式立即交付；`review auto` 幂等发布每轮结论，监听新提交及会影响结论的人工评论并继续完整 Review，直到最新一轮 clean 或用户明确结束 | 冻结或锁定 PR、为了 Review 切换当前 checkout、把静态怀疑直接升级为 finding、直接修复、提交、推送、Approve、Request changes、Resolve thread 或 Merge；普通模式自动等待重跑；auto 将安静等待、暂时查询失败或不完整审查冒充结束 |
+| `review` | 审查工作区、分支、提交或 Pull Request；显式 `review auto` 无人值守跟进 GitHub PR | GitHub PR 使用已认证 `gh`；每轮由四个 specialist 独立读取实时 Diff、上下文、需求、调用面、相关测试代码和已有 CI 状态，fresh master 再证伪裁决；只为具体候选运行最小复现；普通模式立即交付；`review auto` 幂等发布每轮结论，监听新提交及人工评论后继续 | 跑完整单测、全量 lint/typecheck/build/E2E 或等待 CI，把这些当作 clean gate，冻结或锁定 PR，为了 Review 切换当前 checkout，直接修复、提交、推送、Approve、Request changes、Resolve thread 或 Merge |
 | `fix` | 一次性修复明确 bug、失败行为或 Review finding | 多个只读 sub-Agent 并行定位根因、契约和验证面，由一个写者完成范围内修复与针对性验证 | 多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、PR、部署或外部写入 |
 | `converge` | 持续发现、修复并复查问题，直到目标范围内 finding 归零 | 建立 Goal 和 finding 台账，把用户定义的 Review、自动化测试、设备、Web、运行时、安全或性能证据通道尽可能拆给并行 sub-Agent，由一个写者修复 | 多修复写者竞争、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `task-add` | 批量收录 bug、小改动、杂项或后续工作 | 多个只读 sub-Agent 拆分事项和截图证据，主 Agent 去重后单写 `.cyh-flow/tasks/YYYY-MM-DD.md` 并原样保存截图 | 子 Agent 修改应用代码、竞争写任务池、领取或处理任务、提交、推送或外部写入 |
@@ -34,7 +34,7 @@
 
 顶层 `auto` 是这个证据选择规则的显式例外：显式调用 `cyh-flow auto` 就表示把选择权交给 Agent，并要求“所有适用的 Review 和测试”，其中四路代码 Review 与主复查固定必需，同时从项目文档、CI 配置、包脚本、构建文件和影响面推导单元、集成、E2E、类型、Lint、Build、契约、迁移、浏览器、模拟器、设备、安全、性能等适用通道。适用性由变更影响和项目契约决定，不由当前环境能否执行决定；当前授权内可安全执行的通道直接跑，适用但缺少环境或权限的通道会让流水线保持未完成并说明阻塞，不能悄悄跳过，也不会为了跑全而自行 push 触发远端 CI、修改外部环境或碰生产。
 
-`review auto` 与顶层 `auto` 不同：它不实现或修复代码，只把同一套完整 Review 套在无人值守事件循环外层。首轮读取当前实时 PR，验证后的 finding 或 clean 结论以普通 PR 评论发布；有 finding 时继续监听 head SHA、人工 Issue/Review/inline 评论及影响既有证据的 Checks，新的提交一定触发下一轮，可能改变需求、范围、实现证据或 finding 状态的人工讨论也触发下一轮。事件可以合并处理，下一轮始终读取当时的实时内容，不冻结、不锁定、不为 reviewer 准备共享快照；自己的带指纹评论不会触发循环。只有最新完整轮次达到 clean 且发布后的即时复查没有未处理事件，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败、必需检查仍 pending 或 Review 不完整都不算完成。
+`review auto` 与顶层 `auto` 不同：它不实现或修复代码，只把同一套完整 Review 套在无人值守事件循环外层。首轮 Review 前先启动 `scripts/review_watch.py`，由这个纯 Python 进程每约 30 秒通过 `gh` 查询 head SHA 和人工 Issue/Review/inline 评论，不轮询 Checks；它在安静期间不输出，只有检测到事件或连续失败才返回一条结构化 JSON，因此 GitHub 查询和差分本身不消耗 AI token，宿主若必须定期续接长运行进程则仍会有很小的句柄续等开销。验证后的 finding 或 clean 结论仍以普通 PR 评论发布，新的提交一定触发下一轮，人工讨论先唤醒 Agent 判断是否影响需求、范围、实现证据或 finding 状态。下一轮始终读取当时的实时内容，不冻结、不锁定、不为 reviewer 准备共享快照；自己的带指纹评论和 bot 评论不会触发循环。只有最新完整轮次达到 clean 且 watcher 没有未处理事件，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败或 Review 不完整都不算完成，CI pending 或失败只作为观察信息，不单独阻止 Review clean。脚本只随承载它的执行进程存活，跨会话常驻仍需 Scheduled task、launchd、CI 或 webhook，Skill 不会谎称子进程已经变成后台服务。
 
 ## 安装
 
@@ -153,10 +153,10 @@ Build 是纯执行模式，不会在实现中调用四路代码 Review 或主复
 - 浏览器自动化固定使用已安装的 `cyh-browser-skill`：Codex 入口为 `browser-skill:cyh-browser-skill`，Claude Code 插件入口为 `/browser-skill:cyh-browser-skill`；普通公开网页检索使用宿主常规搜索能力。
 - 八种模式都优先把独立工作拆给 sub-Agent 并填满有效并发；协调者负责权限、依赖、冲突控制和结果整合，具体单写者或多写者拓扑以各模式 reference 为准。
 - 目标是满足真实需求与仓库约束的最优实现，不是最少行数或最小 diff；正确性、安全、数据完整性、兼容性等硬约束满足后，再综合复用程度、架构契合、清晰度、可测试性、可维护性、性能和变更范围作选择。
-- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并让 Codex correctness、Ponytail complexity、Differential security、Performance engineer 四路在隔离上下文中读取当下可见目标，fresh master 收齐结果后忽略原始定级与修法，主动从状态生产者、跨端执行边界、角色组合、历史决定和替代路径逐条寻找反证，再决定 verified、known deferred、rejected 或 unresolved。GitHub PR 使用 `gh` 读取实时远端内容；本地工作树脏、有无关分支或没有 PR 分支时，协调者复用可读对象或创建一次隔离临时 clone，不切换用户 checkout。普通 review 不监控也不因目标移动重跑；显式 `review auto` 才用轻量事件游标监听代码和讨论变化，在每轮完成后幂等发布普通评论并决定继续或 clean 结束。两种模式都不做不可变快照或锁，不会自动 Approve、Request changes、Resolve thread 或 Merge。
+- Review 会从变更根节点向上追约束、向下追消费者、横向查共享不变量和替代路径，并让 Codex correctness、Ponytail complexity、Differential security、Integration reliability 四路在隔离上下文中读取当下可见目标，fresh master 收齐结果后忽略原始定级与修法，主动从状态生产者、跨端执行边界、角色组合、历史决定和替代路径逐条寻找反证，再决定 verified、known deferred、rejected 或 unresolved。GitHub PR 使用 `gh` 读取实时远端内容；本地工作树脏、有无关分支或没有 PR 分支时，协调者复用可读对象或创建一次隔离临时 clone，不切换用户 checkout。普通 review 不监控也不因目标移动重跑；显式 `review auto` 才启动确定性脚本管理轻量事件游标，在 PR 安静时不让 AI 查询或比较 GitHub，仅由宿主按需续等进程句柄，并在每轮完成后幂等发布普通评论、决定继续或 clean 结束。两种模式都不做不可变快照或锁，不会自动 Approve、Request changes、Resolve thread 或 Merge。
 - Plan 的最终答复必须给出统一需求方案文档路径及其就绪状态；最终答复先给结论，再说明证据、未完成验证和仍需用户授权的下一步。
 
-四路人格分别适配自 [OpenAI Codex review rubric](https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/review/rubric.md)、[Ponytail review](https://github.com/DietrichGebert/ponytail/tree/main/skills/ponytail-review)、[Trail of Bits differential-review](https://github.com/trailofbits/skills/tree/main/plugins/differential-review) 和 [performance-testing-review 的 performance engineer](https://github.com/wshobson/agents/tree/main/plugins/performance-testing-review)。上游链接提供真实方法来源，仓库内 adapter 统一实时读取契约、只读边界、候选准入和输出格式；主复查不按投票决定，也不继承第一轮的严重级别和修法，而是主动证伪可达性、权威契约、范围决定、影响与责任边界后再给最终 P0-P3、known deferred、advisory、rejected 或 unresolved 结论。
+四路人格分别适配自 [OpenAI Codex review rubric](https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/review/rubric.md)、[Ponytail review](https://github.com/DietrichGebert/ponytail/tree/main/skills/ponytail-review)、[Trail of Bits differential-review](https://github.com/trailofbits/skills/tree/main/plugins/differential-review) 和 [comprehensive-review 的 code reviewer](https://github.com/wshobson/agents/tree/main/plugins/comprehensive-review)。仓库内 adapter 和公共契约已经包含运行所需指令，上游链接只用于标注方法来源，Review 启动时不会为了这些链接联网或下载长文；主复查不按投票决定，也不继承第一轮的严重级别和修法，而是主动证伪可达性、权威契约、范围决定、影响与责任边界后再给最终 P0-P3、known deferred、advisory、rejected 或 unresolved 结论。
 
 ## 仓库结构
 
@@ -170,9 +170,11 @@ cyh-flow/
 |-- agents/
 |   `-- openai.yaml          # Codex UI 展示与默认提示词
 |-- scripts/
+|   |-- review_watch.py      # 无 AI 的 GitHub PR 事件轮询与游标比较
 |   `-- task_pool.py         # Markdown 任务入池、原子领取与状态更新
 |-- tests/
 |   |-- test_host_compat.py  # 双宿主 manifest、入口与链接契约
+|   |-- test_review_watch.py # watcher 事件过滤、游标和唤醒协议
 |   `-- test_task_pool.py    # 截图保留、并发领取和状态流转验证
 `-- references/
     |-- plan.md              # 只读调查与统一需求方案文档标准
