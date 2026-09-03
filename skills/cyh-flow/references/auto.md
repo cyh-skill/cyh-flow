@@ -1,8 +1,8 @@
 # Auto mode
 
-Use top-level `<cyh-flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, records the resulting working target, then runs `converge` with every applicable review and test lane required until zero supported findings remain. It makes safe, reversible, in-scope decisions without routine confirmation, but never expands authorization to commit, push, create or change a PR, deploy, write production or external systems, message people, merge, or perform destructive operations.
+Use top-level `<cyh-flow> auto <source>` for an explicit unattended local delivery pipeline. It runs the requested implementation as `build auto` to completion, records the resulting working target, then runs `converge` with the derived review and test matrix until zero supported findings remain. The invocation delegates safe, reversible, in-scope engineering decisions; commit, push, PR mutation, deployment, production or external writes, messages to people, merge, and destructive operations remain outside its authorization.
 
-This is a phase orchestrator, not a third implementation or review protocol. Read [build.md](build.md) for phase one, then read [converge.md](converge.md) and [review-deep.md](review-deep.md) only after phase one completes. Do not run build and convergence concurrently or blur their completion gates.
+This mode orchestrates two sequential existing protocols: read [build.md](build.md) and complete phase one, then read [converge.md](converge.md) and [review-deep.md](review-deep.md) for phase two. Each phase keeps its own Goal and completion gate.
 
 ## Orchestration ledger and Goal sequence
 
@@ -19,18 +19,18 @@ Maintain only one active Goal under the host mapping, so do not create a simulta
 
 If an unrelated unfinished Goal prevents phase creation, do not replace it. Record the conflict and stop. On resume, read the orchestration ledger, the current Goal, and the phase ledger first; verify repository state before continuing from the recorded cursor. A pending human-review status on an in-scope build decision does not pause the pipeline unless the user explicitly made human acceptance a completion requirement; the convergence review must still inspect the code and behavior resulting from that decision.
 
-## Mandatory review and test matrix
+## Derived review and test matrix
 
-“All reviews and tests” means every lane applicable to the affected behavior and project contract, not every conceivable check in the software ecosystem. Availability does not determine applicability: execute every applicable lane that is safe and currently authorized, and block completion on any applicable lane that cannot run. Derive and record the matrix before starting convergence, with applicability, command or procedure, target, resource, side-effect risk, and reason for including or excluding each lane.
+The matrix covers the review and automated-check lanes applicable to the affected behavior and project contract. Derive and record it before convergence, including each lane's procedure, target, resource, side-effect risk, and evidence for inclusion. Browser, simulator, device, deployment, remote-environment, and business-acceptance lanes are included when the user or an authoritative acceptance contract explicitly selects them. Availability affects execution status rather than applicability; an unavailable required lane blocks completion.
 
 The matrix must include:
 
 - deep code review using [review-deep.md](review-deep.md): four independent live specialist reviews and a fresh master recheck;
 - every applicable established automated check discoverable from repository instructions, CI definitions, package scripts, build files, and affected-module conventions, including focused and broader unit, integration, end-to-end, type, lint, build, schema, migration, contract, or packaging checks as relevant;
-- every platform or user-flow check applicable to the affected surface, such as browser journeys, API flows, simulator, emulator, device, accessibility, or runtime-log validation; execute it in an authorized safe test environment when available, otherwise keep that required lane blocked rather than reclassifying it as not applicable;
+- user-selected or contract-required platform and user-flow checks, such as browser journeys, API flows, simulator, emulator, device, accessibility, or runtime-log validation, executed in an authorized safe test environment;
 - existing security, performance, compatibility, recovery, or data-integrity checks when the changed surface or repository contract makes them applicable.
 
-Use project instructions and impact analysis to decide applicability, and explain exclusions. Do not trigger remote CI through a push, mutate an external environment, run unsafe load, or touch production merely to satisfy the matrix; execute equivalent established local checks when possible. Browser automation must use the installed `cyh-browser-skill` through the active host mapping. Serialize checks that share a browser, simulator, device, database, dependency cache, build output, or other mutable resource.
+Use project instructions and impact analysis to decide automated-check applicability and explain material exclusions. Established local checks are the default execution surface. Remote CI triggers, external-environment mutation, load testing, and production access require their own authorization. A selected browser lane uses the installed `cyh-browser-skill` through the active host mapping. Checks sharing a browser, simulator, device, database, dependency cache, build output, or other mutable resource run serially.
 
 An applicable lane that is unavailable or requires new permission remains required and blocks completion; do not silently downgrade it to optional. Separate pre-existing failures from regressions, but a baseline failure in a required lane still prevents a passing result unless the Goal contract supplies an evidence-grounded disposition that preserves the intended acceptance meaning.
 

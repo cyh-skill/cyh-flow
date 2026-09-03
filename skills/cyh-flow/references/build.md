@@ -2,7 +2,7 @@
 
 Use this mode to implement a concrete requirement, plan, feature, or product change. Known bugs, failing behavior, and review findings belong to `fix`; persistent finding-zero objectives belong to `converge`. Local file edits within the stated scope are authorized; external mutations are not implied.
 
-Build is an execution workflow, not a review workflow. Implement, test, build, and exercise the requested behavior, but do not invoke `review`, launch review personas, run a master recheck, or add a finding-zero gate. Subagents in this mode are implementers or validators, not reviewers.
+Build's worker roles are implementer and validator. Its completion gate covers the requested implementation and selected validation contract. Review personas, master recheck, and finding-zero belong to the explicitly selected review or convergence modes.
 
 ## Modes
 
@@ -18,7 +18,7 @@ Treat only the explicit first argument `auto` after `build` as auto mode. Do not
 3. Confirm the intended repositories and deployment surfaces. If multiple repositories are involved, keep their changes and validation evidence distinct.
 4. Reuse existing project patterns, clients, components, types, migrations, and test helpers. Avoid speculative abstractions and unrelated cleanup.
 
-Do not use destructive Git operations as an implementation shortcut. Do not modify production data or configuration unless explicitly authorized.
+Implementation uses reversible local changes. Destructive Git operations and production data or configuration changes require separate explicit authorization.
 
 Both modes require a concrete objective and acceptance source. In default mode, an ambiguity or implementation-readiness gap is the first problem and stops execution. In auto mode, the user delegates in-scope decision-making to the coordinator: choose among viable behaviors, defaults, implementation trade-offs, task ordering, and safe repairs using the stated objective, source of truth, repository evidence, established patterns, compatibility, risk, and validation cost. Record the decision and rationale, clearly label it as AI-made rather than user-approved, then continue. Do not silently switch to `plan`, invent requirements outside the Goal, enlarge scope, or treat auto as permission for external, destructive, irreversible, or otherwise separately authorized action.
 
@@ -31,11 +31,11 @@ Give each worker an exact objective, acceptance criteria, repository and file ow
 Maximize parallelism only across non-conflicting work:
 
 - Assign disjoint files or modules to concurrent writers. Give a shared file, generated artifact, migration chain, lockfile, schema, or other ordering-sensitive surface one writer at a time.
-- Use read-only investigation or validation tasks when implementation cannot be divided safely. Do not manufacture tiny agents whose coordination cost exceeds the work.
-- Do not run commands concurrently when they mutate the same dependencies, cache, simulator, database, browser target, build output, or external environment.
+- Use read-only investigation or validation tasks when implementation cannot be divided safely; keep work with the coordinator when an additional agent would cost more than it contributes.
+- Give each mutable dependency, cache, simulator, database, browser target, build output, or external environment one command owner at a time.
 - When a worker exposes a material unexpected problem or decision point, default mode stops dispatching new work and reports it; allow already-running safe tasks to finish only to preserve coherent state and collect their results. In auto mode, the coordinator records the problem, makes and records an evidence-grounded in-scope decision, adds any bounded follow-up task with dependencies, and continues resolving it or dispatching unaffected ready work. The coordinator inspects and integrates every worker result; successful process exit alone is not acceptance evidence.
 
-This is execution parallelism only. Do not assign a worker to code review, adversarial review, style critique, optimality review, or master adjudication as part of build.
+Worker assignments stay within implementation, diagnosis, and validation. Code-review and master-adjudication roles are entered through their explicit modes.
 
 ## Auto Goal and local decision ledger
 
@@ -60,10 +60,10 @@ Do not store secrets, credentials, personal data, or unbounded raw logs. Record 
 1. Implement the optimal coherent solution for the agreed behavior and repository constraints. Compare viable reuse, standard-library, native-platform, installed-dependency, direct-code, and new-abstraction options; prefer less code only when correctness, clarity, maintainability, testability, performance, and compatibility remain equal.
 2. Add or update tests when the project normally tests that behavior or the regression risk warrants them.
 3. Run focused checks for each task, then broader integration checks after affected dependency waves in proportion to risk and repository norms. Inspect enough evidence to identify and distinguish an unexpected failure from the baseline. Default mode stops at that problem without starting autonomous diagnosis or repair; auto mode writes it to the ledger first, then continues diagnosis, repair, or unaffected work.
-4. Exercise the real user flow when UI, device, browser, deployment, or external integration behavior is part of acceptance and the required access is available.
-5. Check the final changed-file set and acceptance coverage for unintended files, generated noise, secrets, scope creep, and incomplete tasks. This is execution hygiene, not code review; do not switch to or simulate review mode.
+4. Execute browser, simulator, device, deployment, remote-environment, or business-flow acceptance when that lane was selected by the user or an authoritative acceptance contract and the required access is available. A Web or UI change by itself selects none of these lanes.
+5. Check the final changed-file set and acceptance coverage for unintended files, generated noise, secrets, scope creep, and incomplete tasks as execution hygiene.
 
-A successful typecheck, build, HTTP response, CI job, deployment, or screenshot proves only its own evidence lane. Do not claim full completion when business behavior or another platform remains unverified.
+Each successful typecheck, build, HTTP response, CI job, deployment, or screenshot proves its named evidence lane. Report completion against the selected contract and list material unselected or unavailable lanes separately.
 
 A material unexpected problem includes an ambiguity that changes behavior, an unexpected baseline state, implementation or integration error, failing test or build, worker failure or write conflict, missing required evidence, security or data risk, unavailable environment, or missing permission. In default mode, stop scheduling and modifying at the first such problem, preserve the current state, and report it to the user. Do not reinterpret routine planned steps or a deliberately failing test used by the repository's normal workflow as problems unless they become unexpected or block progress.
 
@@ -89,4 +89,4 @@ For default mode, if no material problem occurs, complete the full requested imp
 
 For auto mode, mark the Goal complete only when all dependency tasks are finished, worker results were inspected and integrated, required implementation and validation evidence passes, and the ledger has no unresolved in-scope problem that defeats the objective. Automatic decisions may remain `pending` for later human review unless the user explicitly made human acceptance part of the Goal gate; pending means “executed but not human-approved,” never implicit acceptance. Report the Goal result, ledger path, tasks and agents used, changes, validation, all unresolved or non-blocking problems, every automatic decision and its human-review status, delivery state, and remaining business acceptance.
 
-Do not quietly continue into unrelated tasks, and never claim that build included code review.
+End at the build scope and report its implementation and validation evidence; code-review status is reported only when an explicit review lane actually ran.

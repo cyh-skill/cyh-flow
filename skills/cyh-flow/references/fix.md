@@ -1,6 +1,6 @@
 # Fix mode
 
-Use this mode for one bounded repair of a known bug, failing behavior, or supported review finding. `fix` authorizes scoped local edits and proportionate validation, but it does not create a persistent Goal or promise to keep discovering and repairing issues until a finding-zero gate. Use `converge` for that persistent objective.
+Use this mode for one bounded repair of a known bug, failing behavior, or supported review finding. `fix` authorizes scoped local edits and a selected proportionate validation contract. A persistent finding-zero objective uses `converge` and its Goal.
 
 ## Resolve the repair target
 
@@ -22,7 +22,7 @@ Use one writer. Implement the smallest coherent root-cause repair that satisfies
 
 The user may name the validation evidence for this repair, such as a focused test, ordinary review, `review deep`, simulator scenario, browser journey, runtime check, or performance measurement. Treat that request as authoritative and do not substitute an easier lane. If `review deep` is selected, load [review-deep.md](review-deep.md) and apply its four-specialist-plus-master protocol; ordinary review uses [review.md](review.md). If no lane is specified, select and disclose checks proportionate to the changed behavior and risk.
 
-Run the user-selected validation after the change. Do not automatically add routine unit, type, lint, build, review, browser, or device lanes when the user selected a narrower check; an extra diagnostic may run only when needed to understand or repair that flow and does not become a completion requirement without user acceptance. Browser automation uses the installed `cyh-browser-skill` through the active host mapping; simulator or device work uses established project tooling and official or vendor-maintained capabilities when available. Testing an external or production environment, writing test data, running impactful scans or load tests, and changing remote state require separate authorization.
+Run the selected validation after the change. When the user names a lane, that lane defines the completion contract; otherwise use source inspection and the smallest risk-proportionate static or automated checks. Additional diagnostics may support diagnosis without becoming completion requirements. A selected browser lane uses the installed `cyh-browser-skill`; selected simulator or device work uses established project tooling and official or vendor-maintained capabilities when available. External or production testing, test-data writes, impactful scans or load tests, and remote-state changes require separate authorization.
 
 Inspect the final diff for unintended files, generated noise, secrets, debug residue, incomplete callers, and unvalidated behavior. Report remaining findings or blocked evidence honestly. A one-shot `fix` may include several edits and checks needed to close the same root cause, but it must not silently expand into indefinite rounds or a general cleanup campaign.
 

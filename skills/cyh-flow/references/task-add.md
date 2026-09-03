@@ -1,10 +1,10 @@
 # Task-add mode
 
-Use this mode to turn a raw batch of bugs, small changes, chores, or follow-up ideas into durable, independently executable tasks without implementing them. The only authorized mutation is the task pool under `<repository>/.cyh-flow/tasks/`; source code, configuration, Git state, and external systems remain read-only.
+Use this mode to turn a raw batch of bugs, small changes, chores, or follow-up ideas into durable, independently executable tasks. Its write surface is the task pool under `<repository>/.cyh-flow/tasks/`; source code, configuration, Git state, and external systems remain read-only.
 
 ## Analyze before storing
 
-Resolve the real repository first, then inspect only enough read-only context to make each item understandable and actionable. Separate distinct outcomes into distinct tasks, merge clear duplicates, link dependencies, and preserve uncertainty instead of inventing product behavior. A task may describe a bug, change, chore, investigation, or another bounded unit of software work; do not force every item into bug terminology.
+Resolve the real repository first, then inspect enough read-only context to make each item understandable and actionable. Separate distinct outcomes, merge clear duplicates, link dependencies, preserve uncertainty, and choose the task type that matches the bounded work.
 
 Store confirmed facts separately from assumptions. Each task should state the observed problem or desired outcome, relevant scope and evidence, a concise analysis, and an acceptance condition another Agent can use without needing the original conversation. Missing information does not block intake: record it under the task and let `task-run` move the item to `waiting` and ask the user if that information becomes necessary for execution.
 
@@ -12,9 +12,9 @@ Treat every user-provided screenshot or image attachment in the active `task-add
 
 ## Parallel intake analysis
 
-Split the intake batch and independent evidence clusters across the maximum useful number of read-only subagents. Each worker returns proposed task boundaries, confirmed evidence, screenshot associations, likely duplicate IDs, analysis, acceptance conditions, and retained uncertainty for its assigned subset. Use additional repository or contract investigation lanes when they are independent and materially improve task executability; do not ask several agents to draft the same item without a distinct purpose.
+Split the intake batch and independent evidence clusters across the maximum useful number of read-only subagents. Each worker owns a distinct subset or investigation purpose and returns proposed task boundaries, confirmed evidence, screenshot associations, likely duplicate IDs, analysis, acceptance conditions, and retained uncertainty.
 
-The coordinator checks cross-batch duplicates and contradictions, owns every final task boundary, and is the sole writer of the dated Markdown and evidence assets through `task_pool.py`. Subagents must not add, claim, or process tasks directly, because concurrent analysis must not race task IDs, duplicate screenshots, or create conflicting status records.
+The coordinator checks cross-batch duplicates and contradictions, owns every final task boundary, and is the sole writer of the dated Markdown and evidence assets through `task_pool.py`. Subagents provide read-only proposals; task creation, claim, and processing remain coordinator-routed operations.
 
 ## Dated Markdown pool
 
@@ -41,4 +41,4 @@ Do not manually synthesize IDs or rewrite existing task sections. If the same wo
 
 ## Completion
 
-Report the dated Markdown path, new task IDs, preserved screenshot paths, duplicate relationships, and any uncertainty retained for execution. Do not start implementation, claim a task, or change delivery state in `task-add` mode.
+Complete this mode by reporting the dated Markdown path, new task IDs, preserved screenshot paths, duplicate relationships, and uncertainty retained for execution. Implementation begins through a later `task-run` or build/fix request.

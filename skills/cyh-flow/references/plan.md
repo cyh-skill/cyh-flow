@@ -2,19 +2,19 @@
 
 Use this mode to understand a requested change and maintain one unified requirement plan that covers both what the system must do and how the current system will implement and validate it. Application code, configuration, Git state, and external systems stay read-only; creating or updating that requirement document is the only mutation authorized by entering plan mode.
 
-Claude Code's native plan permission mode may be used for the read-only investigation portion, but it is not a complete implementation of `cyh-flow plan`: switch back to an editing-capable permission mode before the coordinator creates or updates the canonical requirement document. Do not weaken the required document handoff or claim it was persisted while the host is still enforcing read-only access.
+Claude Code's native plan permission mode may cover the read-only investigation portion. The coordinator switches to an editing-capable permission mode for the required canonical-document write and reports persistence only after that write succeeds.
 
 ## Canonical requirement document
 
-Every requirement decision made during plan mode must be recorded in the canonical document, not left only in chat. The document must fulfill both specification and implementation-planning responsibilities as one integrated deliverable; do not model them as separately maintained artifacts or require separate `Spec` and `Plan` sections, and do not create `*-spec.md` and `*-plan.md` files for the same requirement. A decision includes confirmed scope and non-goals, chosen behavior or contract, accepted trade-offs, implementation direction, compatibility or migration treatment, and acceptance criteria. Keep proposals, assumptions, unresolved questions, and confirmed decisions visibly distinct so an unapproved option is never recorded as settled.
+Every requirement decision made during plan mode is recorded in one canonical document that combines specification and implementation-planning responsibilities. Repository-appropriate headings may be used; a separate `Spec`/`Plan` pair is unnecessary. A decision includes confirmed scope and non-goals, chosen behavior or contract, accepted trade-offs, implementation direction, compatibility or migration treatment, and acceptance criteria. Proposals, assumptions, unresolved questions, and confirmed decisions carry distinct status so only approved choices appear settled.
 
 Before creating a document:
 
 1. Determine a stable requirement identity from an issue or task ID when available; otherwise use the user-visible outcome and domain, not the current conversation wording.
 2. Search the repository's documented planning locations and Markdown content for that identity, title, and distinctive terms. Also inspect documents named by the user.
-3. If the same requirement already has a canonical document, update it in place and preserve its path. Do not create a dated copy, revision copy, `v2`, or a new file for a later conversation, clarification, or plan iteration.
+3. If the same requirement already has a canonical document, update it in place and preserve its path across later conversations, clarifications, and plan iterations.
 4. If no document exists, follow the repository's established requirement or planning convention. When there is no convention, create `docs/plans/<stable-requirement-slug>.md` in the primary repository. Use a durable descriptive slug rather than a date or session identifier.
-5. For a requirement spanning repositories or platforms, keep one canonical document in the coordinating or primary repository. Other locations may link to it when required, but must not carry separately maintained copies of the decisions.
+5. For a requirement spanning repositories or platforms, keep one canonical document in the coordinating or primary repository; other locations link to that source of truth when required.
 
 If multiple legacy documents already cover the same requirement, do not delete or silently merge them. Select and state the canonical document, record links and any unresolved conflicts there, then use only that document for new decisions unless the user or repository rules require consolidation.
 
@@ -41,7 +41,7 @@ Use repository-appropriate headings and keep a decision log with status and rati
 5. Identify cross-repository or cross-platform differences instead of treating one codebase or UI as proof for all consumers.
 6. Ask only questions that block a responsible plan. Make reasonable, disclosed assumptions when the choice is reversible and low-risk.
 
-Do not edit application code or configuration, create branches, create or update issues or PRs, post comments, push, deploy, or change external state in plan mode. Do not modify unrelated documentation. The canonical requirement document is the sole default write boundary.
+The canonical requirement document is plan mode's sole write surface. Application code, configuration, branches, issues, PRs, comments, remotes, deployments, external state, and unrelated documentation remain unchanged.
 
 ## Plan quality
 
@@ -55,7 +55,7 @@ Scale the plan to the work. Include the following when they materially affect im
 - Validation and acceptance split into source, automated tests, CI, deployment/runtime, UI/device, and business evidence as applicable.
 - External actions or permissions that will require later authorization.
 
-Write each confirmed decision and material plan revision to the canonical document as it is reached. Call out uncertainty and live facts that must be refreshed during build. Do not present a plan as proof that implementation or acceptance has happened.
+Write each confirmed decision and material revision to the canonical document as it is reached. Label uncertainty and live facts that require refresh during build, and report the result as implementation-ready planning evidence rather than implementation or acceptance evidence.
 
 ## Handoff
 
