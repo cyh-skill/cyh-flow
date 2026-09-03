@@ -88,6 +88,46 @@ class ReviewPublishTests(unittest.TestCase):
         with self.assertRaises(review_publish.PublishError):
             review_publish.build_marker(target, "body\n", "ordinary", "abc1234")
 
+    def test_re_review_mode_has_a_distinct_head_bound_marker(self) -> None:
+        target = review_publish.Target("acme", "widgets", 42)
+        with self.assertRaises(review_publish.PublishError):
+            review_publish.build_marker(target, "body\n", "re-review", None)
+        marker, _ = review_publish.build_marker(
+            target, "body\n", "re-review", "DEF5678"
+        )
+        self.assertIn(
+            "<!-- cyh-flow-re-review:acme/widgets#42:def5678:", marker
+        )
+        self.assertNotIn("cyh-flow-review-auto", marker)
+
+    def test_re_review_publish_is_idempotent_for_one_head_and_result(self) -> None:
+        runner = FakeRunner()
+        target = review_publish.Target("acme", "widgets", 42)
+        with tempfile.TemporaryDirectory() as temporary:
+            body = Path(temporary) / "comment.md"
+            body.write_text("## Re-review\n\nAll resolved.\n", encoding="utf-8")
+            first = review_publish.publish(
+                target, body, "re-review", "abcdef0", runner
+            )
+            second = review_publish.publish(
+                target, body, "re-review", "abcdef0", runner
+            )
+
+        self.assertEqual(first["status"], "posted")
+        self.assertEqual(second["status"], "existing")
+        self.assertEqual(len(runner.comments), 1)
+        self.assertIn("<!-- cyh-flow-re-review:", runner.comments[0]["body"])
+
+    def test_visible_body_rejects_re_review_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            body = Path(temporary) / "comment.md"
+            body.write_text(
+                "Result\n<!-- cyh-flow-re-review:acme/widgets#42:abcdef0:digest -->\n",
+                encoding="utf-8",
+            )
+            with self.assertRaises(review_publish.PublishError):
+                review_publish.canonical_visible_body(body)
+
     def test_empty_body_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             body = Path(temporary) / "comment.md"

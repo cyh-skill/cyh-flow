@@ -110,6 +110,12 @@ class HostCompatibilityTests(unittest.TestCase):
         review_auto = (SKILL_ROOT / "references" / "review-auto.md").read_text(
             encoding="utf-8"
         )
+        re_review = (SKILL_ROOT / "references" / "re-review.md").read_text(
+            encoding="utf-8"
+        )
+        re_reviewer = (
+            SKILL_ROOT / "references" / "review" / "re-reviewer.md"
+        ).read_text(encoding="utf-8")
         review_watcher = SKILL_ROOT / "scripts" / "review_watch.py"
         review_prepare = SKILL_ROOT / "scripts" / "review_prepare.py"
         review_artifacts = SKILL_ROOT / "scripts" / "review_artifacts.py"
@@ -121,6 +127,7 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("without enabled persistent mailbox delivery", review_deep)
         self.assertIn("<cyh-flow> review deep", root_skill)
         self.assertIn("<cyh-flow> review auto", root_skill)
+        self.assertIn("<cyh-flow> re-review", root_skill)
         self.assertIn("review-auto.md", review)
         self.assertIn("one fresh isolated read-only reviewer", review)
         self.assertIn("five-axis", review)
@@ -136,6 +143,11 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("exactly one fresh daily five-axis reviewer", review_auto)
         self.assertNotIn("all four specialist artifacts", review_auto)
         self.assertIn("scripts/review_watch.py", review_auto)
+        self.assertIn("exactly one fresh isolated read-only reviewer", re_review)
+        self.assertIn("--mode re-review --head-oid", re_review)
+        self.assertIn("Issue reconciliation", re_reviewer)
+        self.assertIn("All resolved", re_reviewer)
+        self.assertNotIn("review_watch.py", re_review)
         self.assertIn("Never run the repository's complete unit", review_deep)
         self.assertIn("integration-reliability", review_deep)
         self.assertNotIn("performance-engineer", review_deep)

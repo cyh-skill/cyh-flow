@@ -88,7 +88,14 @@ def canonical_visible_body(path: Path) -> str:
     body = path.read_text(encoding="utf-8")
     if not body.strip():
         raise PublishError("body file must contain visible review text")
-    if "<!-- cyh-flow-review:" in body or "<!-- cyh-flow-review-auto:" in body:
+    if any(
+        marker in body
+        for marker in (
+            "<!-- cyh-flow-review:",
+            "<!-- cyh-flow-review-auto:",
+            "<!-- cyh-flow-re-review:",
+        )
+    ):
         raise PublishError("body file already contains a cyh-flow review marker")
     return body.rstrip("\r\n") + "\n"
 
@@ -97,12 +104,15 @@ def build_marker(target: Target, visible: str, mode: str, head_oid: str | None) 
     digest = hashlib.sha256(visible.encode("utf-8")).hexdigest()
     if mode == "ordinary":
         if head_oid is not None:
-            raise PublishError("--head-oid is valid only in auto mode")
+            raise PublishError("--head-oid is valid only in head-bound review modes")
         marker = f"<!-- cyh-flow-review:{target.slug}:{digest} -->"
-    else:
+    elif mode in {"auto", "re-review"}:
         if not head_oid or not re.fullmatch(r"[0-9a-fA-F]{7,64}", head_oid):
-            raise PublishError("auto mode requires --head-oid with a Git object ID")
-        marker = f"<!-- cyh-flow-review-auto:{target.slug}:{head_oid.lower()}:{digest} -->"
+            raise PublishError(f"{mode} mode requires --head-oid with a Git object ID")
+        marker_name = "cyh-flow-review-auto" if mode == "auto" else "cyh-flow-re-review"
+        marker = f"<!-- {marker_name}:{target.slug}:{head_oid.lower()}:{digest} -->"
+    else:
+        raise PublishError(f"unsupported review mode: {mode}")
     return marker, digest
 
 
@@ -223,7 +233,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("target", help="GitHub PR URL or OWNER/REPO#NUMBER")
     parser.add_argument("--body-file", required=True, type=Path)
-    parser.add_argument("--mode", choices=("ordinary", "auto"), default="ordinary")
+    parser.add_argument(
+        "--mode", choices=("ordinary", "auto", "re-review"), default="ordinary"
+    )
     parser.add_argument("--head-oid")
     return parser
 
