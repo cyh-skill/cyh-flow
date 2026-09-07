@@ -1,0 +1,7 @@
+interface:
+  display_name: "cyh-flow: task-run"
+  short_description: "Claim and implement tasks without ownership conflicts"
+  default_prompt: "Use $cyh-flow:task-run for this task-run task within its defined scope."
+
+policy:
+  allow_implicit_invocation: false

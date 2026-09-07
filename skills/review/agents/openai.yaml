@@ -1,0 +1,7 @@
+interface:
+  display_name: "cyh-flow: review"
+  short_description: "Review code or PRs with ordinary, deep, and auto modes"
+  default_prompt: "Use $cyh-flow:review for this review task within its defined scope."
+
+policy:
+  allow_implicit_invocation: false

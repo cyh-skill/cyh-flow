@@ -73,7 +73,7 @@ Use `status: blocked` with a precise non-empty `terminal_reason` when the lane c
 Validate the file before returning:
 
 ```text
-python3 <skill-root>/scripts/review_artifacts.py validate-specialist <artifact> --role <role-id>
+python3 <resource-root>/scripts/review_artifacts.py validate-specialist <artifact> --role <role-id>
 ```
 
 Return only the validator's compact terminal JSON containing the artifact path and digest; do not return the full artifact again. A malformed file gets one isolated correction attempt. If the host cannot share a system-temporary artifact with the coordinator, return this same compact JSON object inline as the transport fallback and explicitly identify that limitation; never replace it with prose or omit a lane.

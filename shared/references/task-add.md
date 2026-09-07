@@ -27,10 +27,10 @@ Every task must visibly contain:
 - current owner and claim time, using `—` before the first claim;
 - the content or observed behavior, analysis, acceptance condition, evidence, and an append-only handling history.
 
-Use [scripts/task_pool.py](../scripts/task_pool.py) from this Skill directory to add the analyzed batch so concurrent intake cannot produce duplicate IDs or overwrite a daily document. Prepare a temporary UTF-8 JSON object or array with `title` and optional `type`, `source`, `content`, `analysis`, `acceptance`, and `screenshots` fields, then run:
+Use [scripts/task_pool.py](../scripts/task_pool.py) from the shared resource directory to add the analyzed batch so concurrent intake cannot produce duplicate IDs or overwrite a daily document. Prepare a temporary UTF-8 JSON object or array with `title` and optional `type`, `source`, `content`, `analysis`, `acceptance`, and `screenshots` fields, then run:
 
 ```text
-python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks add --input <json-file-or-stdin-dash>
+python3 <resource-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks add --input <json-file-or-stdin-dash>
 ```
 
 Pass `-` to read the JSON payload from standard input. The `content`, `analysis`, and `acceptance` values may contain ordinary multi-line Markdown, but an exact `<!-- cyh-flow-task:TASK-YYYYMMDD-NNN -->` line is reserved for document framing; rephrase or indent it before intake if source material contains one.

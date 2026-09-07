@@ -13,7 +13,7 @@ Every worker receives the pool path, selection boundary, applicable instructions
 Every Agent needs a distinct, stable identity for the current run, preferably its host-provided session or Agent ID. Before investigating or editing application files, the Agent must claim exactly one task through [scripts/task_pool.py](../scripts/task_pool.py):
 
 ```text
-python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks claim --agent <agent-id>
+python3 <resource-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks claim --agent <agent-id>
 ```
 
 Pass `--task-id <ID>` only when the user selected a specific task. The claim command takes a short operating-system file lock, re-reads the current Markdown, selects an eligible `pending` task, changes it to `doing`, writes the Agent identity and claim time into that same task, appends the event to its history, and releases the lock. The lock carries no business state. If several Agents race, each later Agent sees the already-written `doing` state and claims another task or receives an empty result.
@@ -41,8 +41,8 @@ When a necessary product decision, missing input, new authorization, destructive
 Only the Agent recorded as the current owner may finish its `doing` task. Update it through the script so the owner is checked under the same short document lock:
 
 ```text
-python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks finish --task-id <ID> --agent <agent-id> --status done --note <summary>
-python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks finish --task-id <ID> --agent <agent-id> --status waiting --note <question-or-blocker>
+python3 <resource-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks finish --task-id <ID> --agent <agent-id> --status done --note <summary>
+python3 <resource-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks finish --task-id <ID> --agent <agent-id> --status waiting --note <question-or-blocker>
 ```
 
 Use `done` only when the requested behavior is implemented and its required evidence passes; include changed paths and validation in the history note. Use `waiting` when user input or another explicit dependency is required, preserve the last owner and claim time, and surface the exact question to the user. A failed check that can be diagnosed and repaired within scope remains `doing` while progress is possible.
@@ -50,7 +50,7 @@ Use `done` only when the requested behavior is implemented and its required evid
 After the user answers a waiting task, record that answer and return the task to `pending` before anyone claims it again:
 
 ```text
-python3 <skill-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks reopen --task-id <ID> --agent <agent-id> --note <user-answer>
+python3 <resource-root>/scripts/task_pool.py --pool <repository>/.cyh-flow/tasks reopen --task-id <ID> --agent <agent-id> --note <user-answer>
 ```
 
 `reopen` accepts only `waiting` tasks, clears current ownership, and preserves the earlier claim in history. It cannot be used to steal a `doing` task.

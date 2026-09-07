@@ -1,18 +1,18 @@
 # Review mode
 
-Use this mode for the ordinary, token-conscious review of local changes, a commit, a branch, or a pull request. Run one five-axis code-quality reviewer, not the four specialist lanes or fresh master from deep review. The result is a read-only, evidence-bounded review of the content actually inspected, not a patch, GitHub approval, or guarantee about a later revision.
+Use this mode for the ordinary, token-conscious review of local changes, a commit, a branch, or a pull request. Run one five-axis code-quality reviewer, not the four specialist lanes or fresh master from deep review. The analysis is read-only and evidence-bounded to the content actually inspected. The coordinator delivers the result and, when eligible, submits the formal approval defined below; neither is a guarantee about a later revision.
 
 The exact first argument selects the extension: `review auto` requires a GitHub PR and also reads [review-auto.md](review-auto.md), while `review deep` uses [review-deep.md](review-deep.md). Ordinary review stays on this single-reviewer protocol.
 
 ## Resolve the target
 
 1. Honor the target explicitly named by the user. Otherwise detect current working-tree changes or the branch's real base without assuming `main`.
-2. For one or more GitHub PRs, create one coordinator-owned system-temporary run directory and run `python3 <skill-root>/scripts/review_prepare.py <PR...> --output-dir <run-dir>/prepared`, optionally adding `--source-repo <readable-local-clone>` for one repository. The script authenticates with `gh`, caches complete raw PR responses and disposable source access once, and returns a compact manifest path and digest.
+2. For one or more GitHub PRs, create one coordinator-owned system-temporary run directory and run `python3 <resource-root>/scripts/review_prepare.py <PR...> --output-dir <run-dir>/prepared`, optionally adding `--source-repo <readable-local-clone>` for one repository. The script authenticates with `gh`, caches complete raw PR responses and disposable source access once, and returns a compact manifest path and digest.
 3. Never switch, reset, clean, or run `gh pr checkout` in the user's current repository merely to inspect a PR. A dirty checkout, unrelated branch, or missing local PR branch is a routing signal, not a blocker.
 4. For local review, include staged, unstaged, and relevant untracked source visible when the reviewer reads the target, and confirm there is something to review.
 5. Pass through explicit requirement, issue, or decision text without manufacturing missing product intent. If no authoritative requirement is available, disclose that requirement completeness was not verified.
 
-The preparation manifest is raw transport for the observed target. Ordinary review proceeds once against that material and reports the exact evidence and revision inspected; monitoring, target stability, later changes, and final drift are outside its coverage.
+The preparation manifest is raw transport for the observed target. Ordinary review proceeds once against that material and reports the exact evidence and revision inspected; monitoring, target stability, and later changes are outside its coverage; the shared approval rule separately checks the live head before any formal approval.
 
 ## Run exactly one reviewer
 
@@ -43,8 +43,10 @@ When the user explicitly supplied a direct GitHub PR URL, the PR's `author.login
 
 The comment must be concise and self-contained: required findings first, optional feedback separately, the local verdict, verification evidence, material coverage limits, and a best-effort statement that later changes were not covered. Never publish internal prompts, credentials, raw preparation material, provisional hypotheses, or chain-of-thought.
 
-Write only the visible Markdown body to `<run-dir>/comment.md`, then run `python3 <skill-root>/scripts/review_publish.py <url> --body-file <run-dir>/comment.md`. The publisher owns fingerprinting, duplicate detection, `gh` delivery, exact readback, and private delivery-file cleanup. After retaining the local result or verified comment URL, remove only the exact coordinator-created system-temporary run directory.
+Write only the visible Markdown body to `<run-dir>/comment.md`, then run `python3 <resource-root>/scripts/review_publish.py <url> --body-file <run-dir>/comment.md`. The publisher owns fingerprinting, duplicate detection, `gh` delivery, exact readback, and private delivery-file cleanup. After retaining the local result or verified comment URL, remove only the exact coordinator-created system-temporary run directory.
+
+After a passing PR review, apply [the shared approval rule](review-approval.md), whether or not ordinary-comment delivery is eligible. Retain the reviewed head OID and evidence needed for approval before temporary cleanup.
 
 ## Side-effect boundary
 
-Review's default write surface is its temporary result. The bounded comment delivery above, `review auto`, or a separate posting request may add only the stated ordinary comment. Repair enters `fix`; a repeated finding-zero objective enters `converge`. Source edits, commits, pushes, thread resolution, formal review state, other PR mutation, and messages remain outside review authorization. Never merge a PR.
+Review's default write surface is its temporary result. The bounded comment delivery above, `review auto`, or a separate posting request may add the stated ordinary comment; the shared approval rule additionally authorizes a formal Approve review for an eligible passing PR. Repair enters `fix`; a repeated finding-zero objective enters `converge`. Source edits, commits, pushes, thread resolution, Request changes or other formal review mutations beyond that approval, other PR mutation, and messages remain outside review authorization. Never merge a PR.

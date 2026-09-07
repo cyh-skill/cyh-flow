@@ -9,6 +9,22 @@
   "homepage": "https://github.com/cyh-skill/cyh-flow",
   "repository": "https://github.com/cyh-skill/cyh-flow",
   "license": "MIT",
-  "keywords": ["software-delivery", "planning", "code-review", "subagents", "workflow"],
-  "skills": ["./skills/cyh-flow"]
+  "keywords": [
+    "software-delivery",
+    "planning",
+    "code-review",
+    "subagents",
+    "workflow"
+  ],
+  "skills": [
+    "./skills/plan",
+    "./skills/build",
+    "./skills/auto",
+    "./skills/review",
+    "./skills/re-review",
+    "./skills/fix",
+    "./skills/converge",
+    "./skills/task-add",
+    "./skills/task-run"
+  ]
 }

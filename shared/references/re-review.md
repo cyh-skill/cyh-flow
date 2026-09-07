@@ -4,7 +4,7 @@ Use this mode only for the explicit form `<cyh-flow> re-review <GitHub PR>`. It 
 
 ## Resolve the target and issue baseline
 
-Require one resolvable GitHub pull request, authenticated `gh` read access, and permission to create one ordinary issue comment. Resolve the PR against its real repository; do not infer it from a nearby checkout. Create one coordinator-owned system-temporary run directory and run `python3 <skill-root>/scripts/review_prepare.py <PR> --output-dir <run-dir>/prepared`, optionally with `--source-repo <readable-local-clone>`. This single raw preparation pass supplies the complete current diff, commits, issue comments, formal reviews, inline comments, timeline, checks, statuses, and disposable source tree.
+Require one resolvable GitHub pull request, authenticated `gh` read access, and permission to create one ordinary issue comment. Resolve the PR against its real repository; do not infer it from a nearby checkout. Create one coordinator-owned system-temporary run directory and run `python3 <resource-root>/scripts/review_prepare.py <PR> --output-dir <run-dir>/prepared`, optionally with `--source-repo <readable-local-clone>`. This single raw preparation pass supplies the complete current diff, commits, issue comments, formal reviews, inline comments, timeline, checks, statuses, and disposable source tree.
 
 The issue baseline is every concrete, actionable review problem visible in those materials that predates or motivates the colleague's current fix. Include unresolved threads and actionable findings from ordinary comments, formal reviews, and inline comments even when GitHub's thread state says resolved. Include a cyh-flow marker comment only for its visible findings; the marker itself is transport metadata. Exclude acknowledgements, questions with no requested code change, optional/nit/FYI suggestions, bot summaries without a concrete actionable defect, superseded duplicate wording, and issues explicitly withdrawn or accepted by the responsible human reviewer. When the user supplies a specific review comment, finding list, or reviewed head, it is authoritative for scope and must be reconciled with the live discussion rather than replaced by heuristic discovery.
 
@@ -34,11 +34,11 @@ The visible comment must include the observed head OID, a compact issue-by-issue
 Write only the visible Markdown to `<run-dir>/comment.md`, then run:
 
 ```text
-python3 <skill-root>/scripts/review_publish.py <PR> --body-file <run-dir>/comment.md --mode re-review --head-oid <observed-head>
+python3 <resource-root>/scripts/review_publish.py <PR> --body-file <run-dir>/comment.md --mode re-review --head-oid <observed-head>
 ```
 
-The publisher owns the head-bound marker, duplicate lookup, delivery, uncertain-outcome recovery, exact readback, and private delivery-file cleanup. Immediately before invoking it, query the live PR head once through authenticated `gh` and compare it with the manifest's observed head OID. If they differ, discard the stale result and run one complete replacement re-review against the new head; do not post the old reconciliation. After retaining the verified comment URL, remove only the exact coordinator-created temporary run directory.
+The publisher owns the head-bound marker, duplicate lookup, delivery, uncertain-outcome recovery, exact readback, and private delivery-file cleanup. Immediately before invoking it, query the live PR head once through authenticated `gh` and compare it with the manifest's observed head OID. If they differ, discard the stale result and run one complete replacement re-review against the new head; do not post the old reconciliation. For `All resolved` on another author’s PR, apply [the shared approval rule](review-approval.md) before cleanup. After retaining the verified comment URL and any approval outcome, remove only the exact coordinator-created temporary run directory.
 
 ## Side-effect boundary
 
-Re-review authorizes only the read-only inspection, focused non-mutating checks, and one verified ordinary PR comment above. Never edit code, commit, push, approve, request changes, resolve or dismiss a thread, change PR state, monitor for later commits, close, or merge the PR. If the user wants outstanding issues repaired, switch to `fix` or `converge` only on a separate explicit request.
+Re-review authorizes only the read-only inspection, focused non-mutating checks, one verified ordinary PR comment above, and the formal Approve review allowed by the shared approval rule. Never edit code, commit, push, request changes, resolve or dismiss a thread, otherwise change PR state, monitor for later commits, close, or merge the PR. If the user wants outstanding issues repaired, switch to `fix` or `converge` only on a separate explicit request.

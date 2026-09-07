@@ -1,0 +1,33 @@
+{
+  "name": "cyh-flow",
+  "description": "Codex-first software-delivery workflow with explicit Claude Code compatibility and authorization boundaries",
+  "author": {
+    "name": "cyh-skill"
+  },
+  "homepage": "https://github.com/cyh-skill/cyh-flow",
+  "repository": "https://github.com/cyh-skill/cyh-flow",
+  "license": "MIT",
+  "keywords": [
+    "software-delivery",
+    "planning",
+    "code-review",
+    "subagents",
+    "workflow"
+  ],
+  "version": "1.0.0",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "cyh-flow",
+    "shortDescription": "Independent software delivery workflows",
+    "longDescription": "Plan, build, review, repair, converge, and manage tasks with separate on-demand Skills.",
+    "developerName": "cyh-skill",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use $cyh-flow:review to review this pull request."
+    ]
+  }
+}

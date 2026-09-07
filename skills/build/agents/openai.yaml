@@ -1,0 +1,7 @@
+interface:
+  display_name: "cyh-flow: build"
+  short_description: "Implement scoped changes with optional unattended execution"
+  default_prompt: "Use $cyh-flow:build for this build task within its defined scope."
+
+policy:
+  allow_implicit_invocation: false

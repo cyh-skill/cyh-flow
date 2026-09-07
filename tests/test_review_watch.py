@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "cyh-flow" / "scripts"
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "shared" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 import review_watch
 

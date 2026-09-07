@@ -80,7 +80,7 @@ A `known_deferred` disposition additionally contains non-empty `decision_provena
 Use `status: blocked`, a precise `terminal_reason`, and `clean_eligible: false` when master adjudication cannot complete. Validate the artifact against the specialist manifest:
 
 ```text
-python3 <skill-root>/scripts/review_artifacts.py validate-master <master-artifact> --specialist-manifest <specialist-manifest>
+python3 <resource-root>/scripts/review_artifacts.py validate-master <master-artifact> --specialist-manifest <specialist-manifest>
 ```
 
 Return the validator's compact terminal JSON with path and digest. The assigned temporary artifact is the sole write surface; code edits, repairs, commits, pushes, posts, approvals, review-state changes, thread resolution, and PR merge remain prohibited.
