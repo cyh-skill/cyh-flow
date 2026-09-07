@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "shared" / "scripts"
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "cyh-flow" / "scripts"
 sys.path.insert(0, str(SCRIPT_ROOT))
 import review_publish
 

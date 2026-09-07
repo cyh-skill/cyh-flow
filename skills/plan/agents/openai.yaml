@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: plan"
-  short_description: "Write one coherent requirement and implementation plan"
-  default_prompt: "Use $cyh-flow:plan for this plan task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

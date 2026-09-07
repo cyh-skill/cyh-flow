@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "cyh-flow",
-    "shortDescription": "Independent software delivery workflows",
-    "longDescription": "Plan, build, review, repair, converge, and manage tasks with separate on-demand Skills.",
+    "shortDescription": "One entry for software delivery workflows",
+    "longDescription": "One cyh-flow Skill routes planning, implementation, review, repair, convergence, and tasks to on-demand references.",
     "developerName": "cyh-skill",
     "category": "Productivity",
     "capabilities": [
@@ -27,7 +27,7 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Use $cyh-flow:review to review this pull request."
+      "Use $cyh-flow:cyh-flow /review to review this pull request."
     ]
   }
 }

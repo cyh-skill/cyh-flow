@@ -1,0 +1,7 @@
+interface:
+  display_name: "cyh-flow"
+  short_description: "One entry for planning, delivery, review, and task workflows"
+  default_prompt: "Use $cyh-flow /review to review this change within its defined scope."
+
+policy:
+  allow_implicit_invocation: false

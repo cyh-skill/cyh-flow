@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: fix"
-  short_description: "Repair a known bug with focused regression validation"
-  default_prompt: "Use $cyh-flow:fix for this fix task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

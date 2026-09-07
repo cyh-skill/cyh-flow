@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: converge"
-  short_description: "Inspect and repair until selected evidence passes"
-  default_prompt: "Use $cyh-flow:converge for this converge task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

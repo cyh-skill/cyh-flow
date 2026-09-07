@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: task-add"
-  short_description: "Record actionable tasks and preserve intake evidence"
-  default_prompt: "Use $cyh-flow:task-add for this task-add task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

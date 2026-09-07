@@ -17,14 +17,6 @@
     "workflow"
   ],
   "skills": [
-    "./skills/plan",
-    "./skills/build",
-    "./skills/auto",
-    "./skills/review",
-    "./skills/re-review",
-    "./skills/fix",
-    "./skills/converge",
-    "./skills/task-add",
-    "./skills/task-run"
+    "./skills/cyh-flow"
   ]
 }

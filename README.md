@@ -1,6 +1,6 @@
 # cyh-flow
 
-面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，按九种模式提供独立 Skill。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于方案设计、代码实现、无人值守构建与收敛、一次性或无人值守 PR 审查、既有 Review 问题验收、一次性修复、持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
+面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，由一个 `cyh-flow` Skill 按需分发九种模式。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于方案设计、代码实现、无人值守构建与收敛、一次性或无人值守 PR 审查、既有 Review 问题验收、一次性修复、持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
 ```text
 用户请求
@@ -36,7 +36,7 @@
 
 顶层 `auto` 是这个证据选择规则的显式例外：显式调用 `cyh-flow auto` 就表示把选择权交给 Agent，并要求“所有适用的 Review 和测试”，其中 `review deep` 的四路代码审查与主复查固定必需，同时从项目文档、CI 配置、包脚本、构建文件和影响面推导单元、集成、E2E、类型、Lint、Build、契约、迁移、浏览器、模拟器、设备、安全、性能等适用通道。适用性由变更影响和项目契约决定，不由当前环境能否执行决定；当前授权内可安全执行的通道直接跑，适用但缺少环境或权限的通道会让流水线保持未完成并说明阻塞，不能悄悄跳过，也不会为了跑全而自行 push 触发远端 CI、修改外部环境或碰生产。
 
-`review auto` 与顶层 `auto` 不同：它不实现或修复代码，只把普通单 reviewer 审查套在无人值守事件循环外层，不调用 deep 的四路与 Master。首轮 Review 前先启动 `shared/scripts/review_watch.py`，由这个纯 Python 进程每约 30 秒通过 `gh` 查询 head SHA 和人工 Issue/Review/inline 评论，不轮询 Checks；它在安静期间不输出，只有检测到事件或连续失败才返回一条结构化 JSON，因此 GitHub 查询和差分本身不消耗 AI token，宿主若必须定期续接长运行进程则仍会有很小的句柄续等开销。每轮由 `review_prepare.py` 机械缓存一次原始 PR 内容与临时源码对象，一个 fresh reviewer 完成五轴检查，`review_publish.py` 一次完成评论指纹、查重、发布和回读。新的提交一定触发下一轮，人工讨论先唤醒 Agent 判断是否影响需求、范围、实现证据或 finding 状态；自己的带指纹评论和 bot 评论不会触发循环。只有最新完整轮次达到 `Review-ready`、watcher 没有未处理事件且适用的自动批准已经验证，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败或 Review 不完整都不算完成，CI pending 或失败只作为观察信息，不单独阻止 Review-ready。脚本只随承载它的执行进程存活，跨会话常驻仍需 Scheduled task、launchd、CI 或 webhook，Skill 不会谎称子进程已经变成后台服务。
+`review auto` 与顶层 `auto` 不同：它不实现或修复代码，只把普通单 reviewer 审查套在无人值守事件循环外层，不调用 deep 的四路与 Master。首轮 Review 前先启动 `skills/cyh-flow/scripts/review_watch.py`，由这个纯 Python 进程每约 30 秒通过 `gh` 查询 head SHA 和人工 Issue/Review/inline 评论，不轮询 Checks；它在安静期间不输出，只有检测到事件或连续失败才返回一条结构化 JSON，因此 GitHub 查询和差分本身不消耗 AI token，宿主若必须定期续接长运行进程则仍会有很小的句柄续等开销。每轮由 `review_prepare.py` 机械缓存一次原始 PR 内容与临时源码对象，一个 fresh reviewer 完成五轴检查，`review_publish.py` 一次完成评论指纹、查重、发布和回读。新的提交一定触发下一轮，人工讨论先唤醒 Agent 判断是否影响需求、范围、实现证据或 finding 状态；自己的带指纹评论和 bot 评论不会触发循环。只有最新完整轮次达到 `Review-ready`、watcher 没有未处理事件且适用的自动批准已经验证，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败或 Review 不完整都不算完成，CI pending 或失败只作为观察信息，不单独阻止 Review-ready。脚本只随承载它的执行进程存活，跨会话常驻仍需 Scheduled task、launchd、CI 或 webhook，Skill 不会谎称子进程已经变成后台服务。
 
 `re-review` 是一次性验收模式，不启动 watcher，也不重新寻找与原 Review 无关的问题。它从 PR 的人工评论、formal review、inline thread 和用户明确给出的 finding 中去重建立完整问题清单，再逐项判断 `Resolved`、`Outstanding`、`Obsolete` 或 `Unverified`，并检查修复触及行为的直接回归。只有清单证据闭合后才自动发布；全部解决与仍有遗留都会回贴 PR，基线或关键证据不足的 `Incomplete` 不会发布误导性结论。发布使用独立且绑定当前 head 的 re-review marker，因此重复执行不会重复发同一结果，也不会与普通或 auto review 的评论指纹冲突。
 
@@ -44,73 +44,80 @@
 
 ## 安装
 
-安装整个 `cyh-flow` 插件，保留 `skills/` 和 `shared/` 的相对位置。单独复制 `skills/review/` 会缺少共享协议和脚本。旧的单体 `$cyh-flow` 入口已移除，不提供兼容路由。
+`skills/cyh-flow/` 是完整、自包含的唯一 Skill，包含 `SKILL.md`、`agents/openai.yaml`、`references/` 和 `scripts/`。九种模式是内部协议，不再注册为九个 Skill；两个宿主的插件包装也只暴露这一个入口。
 
-### Codex
+### Codex：使用简短的 `$cyh-flow/xxx`
 
-仓库提供 `.codex-plugin/plugin.json`，插件名为 `cyh-flow`，其中包含九个独立 Skill，安装后使用 `$cyh-flow:review`、`$cyh-flow:build` 等入口。通过 Codex 的插件管理界面或配置好的 marketplace 安装完整仓库；更新已安装插件后，新建会话再选择对应 Skill。本次仓库结构修改不会自动更新本机已有安装。
+把完整的 `skills/cyh-flow/` 目录作为独立 Skill 安装到 `~/.agents/skills/cyh-flow/`，或项目的 `.agents/skills/cyh-flow/`，即可使用 `$cyh-flow/review ...`。也可以让 `skill-installer` 从本仓库的 `skills/cyh-flow` 路径安装。安装内容必须包含内部 references 和 scripts，不能只复制 `SKILL.md`。
 
-插件名提供组件命名空间，`skills/<name>/SKILL.md` 定义具体 Skill，详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。未按插件安装的独立 Skill 不会自动获得 `cyh-flow:` 命名空间。
+如果需要简短名称，应复制或安装这个自包含目录，不要将 Skill 目录软链接回带插件清单的仓库：Codex 会检查真实路径的上级插件清单，并可能加上插件命名空间。避免同时保留独立安装和插件安装，以免列表出现两个入口。
+
+### Codex：作为插件安装
+
+通过 Codex 插件管理界面或已配置的 marketplace 安装完整仓库。插件名和 Skill 名均为 `cyh-flow`，实际完整名称为 `$cyh-flow:cyh-flow`，调用示例为 `$cyh-flow:cyh-flow /review ...`；它仍然只有一个 Skill。插件安装不会自动生成 `$cyh-flow` 短别名，也不能把原生冒号命名空间改为斜杠。详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。
+
+本次仓库修改不会自动替换已有安装。更新安装后，新建会话并确认 Skill 列表只显示预期的一个 cyh-flow 入口。
 
 ### Claude Code
 
-使用仓库提供的 Claude Code marketplace 安装同一组 Skill：
+独立安装时，把完整的 `skills/cyh-flow/` 目录放入 `~/.claude/skills/cyh-flow/` 或项目 `.claude/skills/cyh-flow/`，使用 `/cyh-flow review ...`。
+
+插件安装继续使用仓库提供的 marketplace：
 
 ```text
 /plugin marketplace add cyh-skill/cyh-flow
 /plugin install cyh-flow@cyh-flow
 ```
 
-安装后使用 `/cyh-flow:review`、`/cyh-flow:build` 等入口；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用 `skills/<mode>/SKILL.md` 和 `shared/`，Codex 的每个入口通过 `agents/openai.yaml` 保留仅显式调用的设置。
+安装后使用 `/cyh-flow:cyh-flow review ...`；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用唯一的 `skills/cyh-flow/SKILL.md` 和内部资源。Claude Code 的原生命名空间为 `plugin-name:skill-name`，参见 [Claude Code Skill 文档](https://code.claude.com/docs/en/skills#where-skills-live)。
 
 ## 使用
 
-Codex 显式调用使用 `$cyh-flow:<mode>`；`cyh-flow` 是插件名，冒号后是独立 Skill 名称：
+以下示例采用 Codex 独立安装后的短名称；斜杠后是交给唯一入口解析的模式参数。`$cyh-flow review ...` 和 `$cyh-flow /review ...` 也选择同一个模式。
 
 ```text
-$cyh-flow:plan 给结账流程增加批量确认，先分析影响并出方案
+$cyh-flow/plan 给结账流程增加批量确认，先分析影响并出方案
 
-$cyh-flow:build 按 Issue #123 实现，并运行相关测试；不要提交或推送
+$cyh-flow/build 按 Issue #123 实现，并运行相关测试；不要提交或推送
 
-$cyh-flow:build auto 按 docs/plans/checkout.md 执行方案，由 AI 自动决策，记录问题和决定供我之后 Review
+$cyh-flow/build auto 按 docs/plans/checkout.md 执行方案，由 AI 自动决策，记录问题和决定供我之后 Review
 
-$cyh-flow:auto 按 docs/plans/checkout.md 无人值守完成实现，然后跑完所有适用 Review 和测试直到 finding 归零
+$cyh-flow/auto 按 docs/plans/checkout.md 无人值守完成实现，然后跑完所有适用 Review 和测试直到 finding 归零
 
-$cyh-flow:review PR #456，只做 review，不修改代码
+$cyh-flow/review PR #456，只做 review，不修改代码
 
-$cyh-flow:review deep PR #456，使用四路 specialist 和 fresh master 深度审查
+$cyh-flow/review deep PR #456，使用四路 specialist 和 fresh master 深度审查
 
-$cyh-flow:review auto https://github.com/acme/payments/pull/456，无人值守审查并把问题发到 PR
+$cyh-flow/review auto https://github.com/acme/payments/pull/456，无人值守审查并把问题发到 PR
 
-$cyh-flow:re-review https://github.com/acme/payments/pull/456，验证同事是否解决全部 Review 问题并自动回贴 PR
+$cyh-flow/re-review https://github.com/acme/payments/pull/456，验证同事是否解决全部 Review 问题并自动回贴 PR
 
-$cyh-flow:fix 修复 Review 发现的并发问题，并运行针对性回归测试
+$cyh-flow/fix 修复 Review 发现的并发问题，并运行针对性回归测试
 
-$cyh-flow:converge 持续检查结账流程直到 finding 归零；证据通道：review deep、iOS 模拟器、结账 Web 流程
+$cyh-flow/converge 持续检查结账流程直到 finding 归零；证据通道：review deep、iOS 模拟器、结账 Web 流程
 
-$cyh-flow:task-add 把下面这批 bug 和小改动分析后收进任务池
+$cyh-flow/task-add 把下面这批 bug 和小改动分析后收进任务池
 
-$cyh-flow:task-run 并发处理任务池里所有可执行事项，有问题集中问我
+$cyh-flow/task-run 并发处理任务池里所有可执行事项，有问题集中问我
 ```
 
-Claude Code 使用相同的插件命名空间，将 `$` 换为 `/`：
+Codex 插件安装时改用 `$cyh-flow:cyh-flow /review deep PR #456`；Claude Code 独立安装用 `/cyh-flow review deep PR #456`，插件安装用 `/cyh-flow:cyh-flow review deep PR #456`。不要把 Claude Code 的 `/cyh-flow/review` 当作已注册的原生命令。
 
-```text
-/cyh-flow:plan 给结账流程增加批量确认，先分析影响并出方案
-/cyh-flow:auto 按 docs/plans/checkout.md 完成实现与全证据收敛
-/cyh-flow:review deep PR #456
-/cyh-flow:review auto https://github.com/acme/payments/pull/456
-/cyh-flow:re-review https://github.com/acme/payments/pull/456
-```
+cyh-flow 的契约仍是仅显式调用：自然语言中的 plan、build 或 review 不会自动启用这套流程。入口先识别模式，只加载共享执行边界、宿主能力说明和选中模式的协议；`review deep` / `review auto` 由紧随模式的参数选择，普通 review 不加载 deep、实现或任务池协议。缺少模式或模式无法识别时先确认，不默认为 build 或 auto。不同模式组合时保留各阶段的权限边界，规划不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理任务。
 
-cyh-flow 的契约是仅显式调用：自然语言中的 plan、build 或 review 不会自动启用这套流程。每个入口只加载共享执行边界、宿主能力说明和当前模式的协议；`review deep` / `review auto` 仍是 review Skill 的参数，普通 review 不加载 deep、实现或任务池协议。不同模式组合时保留各阶段的权限边界，规划不会自动进入实现，审查不会自动变成修复，task-add 不会自动处理任务。
+### 调用语法依据与限制
 
+核对本机 Codex CLI `0.153.4` 对应源码后，`$cyh-flow/review` 的含义是可明确区分的两层：原生 mention 解析器在 `/` 前结束名称，得到 `cyh-flow`；入口再把剩余 `/review` 解析为模式。插件名则通过 `plugin:skill` 形式限定，显式选择要求实际名称精确匹配，因此 `$cyh-flow/review` 不能直接替代插件安装后的 `$cyh-flow:cyh-flow /review`。源码依据为 [mention 解析器](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/skills/src/mentions.rs)、[显式 Skill 选择](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/skills/src/selection.rs) 和 [命名空间解析](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/ext/skills/src/loader/namespace.rs)。
+
+另用本机 Codex app-server 的 `skills/list` 接口在临时目录实测：自包含 Skill 副本只发现一个 `cyh-flow`，放在插件清单下的副本只发现一个 `cyh-flow:cyh-flow`，两种布局均无加载错误；验证副本没有写入个人安装目录。
+
+这不等于注册了一组原生子命令；`/review` 等模式不会因为存在内部 reference 就成为补全候选。桌面端不同版本的输入框行为没有在本次修改中实测，若相邻斜杠写法未被绑定，先从菜单选中 cyh-flow，再输入 `/review ...` 或 `review ...`。不带 `$` 的 `cyh-flow/review` 只可视为文字约定，不能保证在仅显式调用设置下触发加载。Skill 的分层加载机制见 [OpenAI Skill 文档](https://learn.chatgpt.com/docs/build-skills)。
 
 ## 双宿主能力映射
 
 | 契约 | Codex | Claude Code | 兼容降级 |
 | --- | --- | --- | --- |
-| 显式入口 | `$cyh-flow:<mode> ...` | `/cyh-flow:<mode> ...` | reference 中的 `<cyh-flow> MODE` 表示当前宿主对应的独立入口 |
+| 显式入口 | 独立：`$cyh-flow/<mode> ...`；插件：`$cyh-flow:cyh-flow /<mode> ...` | 独立：`/cyh-flow <mode> ...`；插件：`/cyh-flow:cyh-flow <mode> ...` | reference 中的 `<cyh-flow> MODE` 表示通过唯一入口选择模式 |
 | Goal | 原生 create/get/update Goal API | 用户自行启用的 `/goal <condition>`：session-scoped、单 active、替换语义、基于 Stop hook | 两者不作 API 等价声明；可用时由 Task 工具记录当前阶段；没有持续执行循环时，`review auto` 必须明确 blocked，不能声称仍在后台监控 |
 | 独立工作者 | Agent 与 addressable follow-up | 标准 `Agent`；只有用户已启用实验性 Agent Teams 时才使用 `SendMessage`/共享团队协调 | 普通 review、review auto 和 re-review 固定一个 reviewer；deep 无可寻址 follow-up 时先收齐四路 specialist，再启动 fresh master，无并发时保持隔离并顺序执行 |
 | 项目规则 | `AGENTS.md` | `CLAUDE.md` 及宿主加载的项目规则 | 读取当前宿主和项目实际存在的规则，不伪造统一优先级 |
@@ -152,29 +159,22 @@ Review 的角色设计参考并重新适配了以下公开项目；这里集中�
 
 ```text
 cyh-flow/
-|-- .codex-plugin/plugin.json       # Codex 插件清单
+|-- .codex-plugin/plugin.json       # Codex 插件清单，只包含一个 Skill
 |-- .claude-plugin/                 # Claude Code 插件与 marketplace 清单
 |-- skills/
-|   |-- plan/SKILL.md
-|   |-- build/SKILL.md
-|   |-- auto/SKILL.md
-|   |-- review/SKILL.md             # 普通 review；deep / auto 按需加载
-|   |-- re-review/SKILL.md
-|   |-- fix/SKILL.md
-|   |-- converge/SKILL.md
-|   |-- task-add/SKILL.md
-|   `-- task-run/SKILL.md
-|-- shared/
-|   |-- references/                # 共享边界、模式协议与 Review 角色
-|   `-- scripts/                   # PR 工具、watcher 与任务池工具
-|-- tests/                         # 包装、加载隔离和工具行为测试
+|   `-- cyh-flow/
+|       |-- SKILL.md                # 唯一入口：模式选择与按需加载
+|       |-- agents/openai.yaml      # 展示名称与仅显式调用设置
+|       |-- references/             # 共享边界、九种模式与 Review 角色
+|       `-- scripts/                # PR 工具、watcher 与任务池工具
+|-- tests/                         # 包装、加载边界和工具行为测试
 |-- LICENSE
 `-- README.md
 ```
 
-每个 Skill 目录还包含 `agents/openai.yaml`，负责 Codex 展示和显式调用设置。共享协议与脚本只维护一份，文件存在于同一个插件里不意味着全部进入上下文；只读取选中入口明确要求的内容。独立入口不引用其他模式的 `SKILL.md`；跨模式流水线按阶段加载必要 reference。
+同一 Skill 目录中的文件不会全部进入上下文，只读取选中模式和当前阶段要求的协议；跨模式流水线按阶段加载必要 reference。内部资源与入口一起分发，独立安装不依赖插件根目录中的其他文件。
 
-修改后使用官方 `skill-creator` 校验各 Skill，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、相对链接、加载边界和脚本行为；有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
+修改后使用官方 `skill-creator` 校验 `skills/cyh-flow`，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、自包含资源、相对链接、加载边界和脚本行为；有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
 
 ## 可见性与授权
 

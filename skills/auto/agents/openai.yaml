@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: auto"
-  short_description: "Build then converge with applicable review and checks"
-  default_prompt: "Use $cyh-flow:auto for this auto task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

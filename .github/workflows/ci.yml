@@ -14,19 +14,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-skills:
+  validate-skill:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      matrix:
-        skill: [plan, build, auto, review, re-review, fix, converge, task-add, task-run]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate Skill package
         uses: cyh-skill/.github/actions/validate-skill@ed44478f6dd48649dd1b2ee7dd219d4af7699d8b
         with:
-          path: skills/${{ matrix.skill }}
+          path: skills/cyh-flow
 
   validate-and-test:
     runs-on: ubuntu-latest

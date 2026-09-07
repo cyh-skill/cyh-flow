@@ -1,7 +1,0 @@
-interface:
-  display_name: "cyh-flow: re-review"
-  short_description: "Verify fixes for existing pull request review issues"
-  default_prompt: "Use $cyh-flow:re-review for this re-review task within its defined scope."
-
-policy:
-  allow_implicit_invocation: false

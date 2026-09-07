@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / "shared"
+SKILL_ROOT = ROOT / "skills" / "cyh-flow"
 MODES = {"plan", "build", "auto", "review", "re-review", "fix", "converge", "task-add", "task-run"}
 
 
@@ -29,19 +31,19 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 class HostCompatibilityTests(unittest.TestCase):
-    def test_both_plugins_discover_exactly_the_independent_skills(self) -> None:
+    def test_both_plugins_discover_only_the_single_skill(self) -> None:
         claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
         codex = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
         self.assertEqual(claude["name"], codex["name"])
         self.assertEqual(codex["name"], "cyh-flow")
         self.assertEqual(claude["license"], codex["license"])
         self.assertEqual(codex["license"], "MIT")
-        actual = {path.parent.name for path in (ROOT / codex["skills"]).glob("*/SKILL.md")}
-        self.assertEqual(actual, MODES)
-        self.assertEqual({Path(path).name for path in claude["skills"]}, MODES)
+        actual = list((ROOT / codex["skills"]).rglob("SKILL.md"))
+        self.assertEqual(actual, [SKILL_ROOT / "SKILL.md"])
+        self.assertEqual(claude["skills"], ["./skills/cyh-flow"])
         for path in claude["skills"]:
             self.assertTrue((ROOT / path / "SKILL.md").is_file())
-        self.assertFalse((ROOT / "skills/cyh-flow").exists())
+        self.assertEqual(list(ROOT.rglob("SKILL.md")), actual)
 
     def test_marketplace_entry_matches_plugin(self) -> None:
         marketplace = json.loads(
@@ -68,35 +70,52 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("[MIT License](LICENSE)", readme)
         self.assertNotIn("尚未附带开源许可证", readme)
 
-    def test_independent_entrypoints_preserve_explicit_host_invocation(self) -> None:
+    def test_single_entrypoint_preserves_explicit_host_invocation(self) -> None:
         readme = (ROOT / "README.md").read_text()
+        metadata = frontmatter(SKILL_ROOT / "SKILL.md")
+        body = (SKILL_ROOT / "SKILL.md").read_text()
+        ui = (SKILL_ROOT / "agents/openai.yaml").read_text()
+        self.assertEqual(metadata["name"], "cyh-flow")
+        self.assertIn("Use only when explicitly invoked", metadata["description"])
+        self.assertIn("$ARGUMENTS", body)
+        self.assertIn("$cyh-flow/review", body)
+        self.assertIn("$cyh-flow:cyh-flow", body)
+        self.assertIn("/cyh-flow:cyh-flow review", body)
+        self.assertIn('display_name: "cyh-flow"', ui)
+        self.assertIn("allow_implicit_invocation: false", ui)
         for mode in MODES:
             with self.subTest(mode=mode):
-                skill = ROOT / "skills" / mode
-                metadata = frontmatter(skill / "SKILL.md")
-                body = (skill / "SKILL.md").read_text()
-                ui = (skill / "agents/openai.yaml").read_text()
-                self.assertEqual(metadata["name"], mode)
-                self.assertIn("Use only when explicitly invoked", metadata["description"])
-                self.assertIn("$ARGUMENTS", body)
-                self.assertIn(f"$cyh-flow:{mode}", body)
-                self.assertIn(f"/cyh-flow:{mode}", body)
-                self.assertIn(f"$cyh-flow:{mode}", ui)
-                self.assertIn("allow_implicit_invocation: false", ui)
-                self.assertIn(f"$cyh-flow:{mode}", readme)
+                self.assertIn(f"$cyh-flow/{mode}", readme)
+                self.assertTrue((SKILL_ROOT / "references" / f"{mode}.md").is_file())
 
-    def test_review_entrypoint_does_not_load_other_workflows(self) -> None:
-        # Inspect every directly reachable document; review variants remain conditional.
-        entry = ROOT / "skills/review/SKILL.md"
-        expected = {
-            "common.md", "host-capabilities.md", "review.md",
-            "review-auto.md", "review-deep.md", "review-approval.md",
+    def test_route_index_keeps_mode_specific_loading(self) -> None:
+        entry = SKILL_ROOT / "SKILL.md"
+        expected_routes = {
+            **{mode: {f"{mode}.md"} for mode in MODES},
+            "build auto": {"build.md"},
+            "review deep": {"review-deep.md"},
+            "review auto": {"review.md", "review-auto.md"},
         }
         pattern = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
-        linked = [(entry.parent / link.split("#", 1)[0]).resolve()
-                  for link in pattern.findall(entry.read_text())]
-        self.assertEqual({path.name for path in linked}, expected)
-        for path in linked:
+        routes = {}
+        for line in entry.read_text().splitlines():
+            if line.startswith("| `"):
+                columns = line.split("|")
+                route = columns[1].strip().strip("`")
+                routes[route] = {Path(link).name for link in pattern.findall(columns[2])}
+        self.assertEqual(routes, expected_routes)
+
+        # Even following every conditional review link cannot reach implementation modes.
+        pending = [SKILL_ROOT / "references" / name for name in {
+            "common.md", "host-capabilities.md", "review.md", "review-deep.md",
+            "review-auto.md", "re-review.md", "review-approval.md",
+        }]
+        visited = set()
+        while pending:
+            path = pending.pop().resolve()
+            if path in visited:
+                continue
+            visited.add(path)
             for link in pattern.findall(path.read_text()):
                 if link.startswith(("https://", "http://", "#")):
                     continue
@@ -105,6 +124,26 @@ class HostCompatibilityTests(unittest.TestCase):
                     "plan.md", "build.md", "auto.md", "converge.md",
                     "fix.md", "task-add.md", "task-run.md", "SKILL.md",
                 })
+                pending.append(target)
+
+    def test_standalone_copy_contains_all_runtime_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            installed = Path(directory) / "cyh-flow"
+            shutil.copytree(SKILL_ROOT, installed, ignore=shutil.ignore_patterns("__pycache__"))
+            pattern = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+            for markdown in installed.rglob("*.md"):
+                for link in pattern.findall(markdown.read_text()):
+                    if link.startswith(("https://", "http://", "#")):
+                        continue
+                    target = (markdown.parent / link.split("#", 1)[0]).resolve()
+                    with self.subTest(markdown=markdown.name, link=link):
+                        self.assertTrue(target.is_relative_to(installed.resolve()))
+                        self.assertTrue(target.is_file())
+            self.assertEqual(
+                {path.name for path in (installed / "scripts").glob("*.py")},
+                {"review_prepare.py", "review_watch.py", "review_publish.py",
+                 "review_artifacts.py", "task_pool.py"},
+            )
 
     def test_host_specific_fallback_contracts_are_present(self) -> None:
         root_skill = (SKILL_ROOT / "references/host-capabilities.md").read_text(encoding="utf-8")
