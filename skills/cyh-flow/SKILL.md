@@ -1,11 +1,11 @@
 ---
 name: cyh-flow
-description: Software delivery workflows for planning, implementation, PR review, repair, convergence, and repository task pools. Use only when explicitly invoked as cyh-flow with a selected mode.
+description: Software delivery workflows for PR review, repair, convergence, and repository task pools. Use only when explicitly invoked as cyh-flow with a selected mode.
 ---
 
 # cyh-flow
 
-One Skill with on-demand modes. Preserve explicit-only invocation; ordinary mentions of planning, building, or reviewing do not activate this workflow.
+One Skill with on-demand modes. Preserve explicit-only invocation; ordinary mentions of reviewing, fixing, or converging do not activate this workflow.
 
 ## Invocation and routing
 
@@ -19,14 +19,9 @@ After selecting a route, read [the shared execution contract](references/common.
 
 | Mode / variant | Read for this route | Boundary |
 | --- | --- | --- |
-| `plan` | [Planning](references/plan.md) | Investigate and write one canonical requirement/implementation document; no application code or external writes. |
-| `build` | [Build](references/build.md) | Implement the scoped request; stop at the first material unexpected problem or decision point. |
-| `build auto` | [Build](references/build.md) | Continue scoped implementation with a Goal and decision ledger; no automatic review phase. |
-| `auto` | [Unattended pipeline](references/auto.md) | Load build, then converge and required evidence in phase order; preserve separate completion gates. |
 | `review` | [Ordinary review](references/review.md) | One isolated read-only five-axis reviewer; no implementation or task workflows. |
 | `review deep` | [Deep review](references/review-deep.md) | Four isolated specialists plus a fresh master; reviewers remain read-only. |
 | `review auto` | [Ordinary review](references/review.md), [Auto supplement](references/review-auto.md) | Follow a GitHub PR using one reviewer per cycle; no deep review or source edits. |
-| `re-review` | [Acceptance review](references/re-review.md) | One isolated acceptance reviewer reconciles existing issues and direct fix regressions; no broad new review or source edits. |
 | `fix` | [Repair](references/fix.md) | One repair writer, scoped read-only evidence workers, and focused validation. |
 | `converge` | [Convergence](references/converge.md) | Preserve user-selected evidence lanes, one repair writer, the finding ledger, and completion gate. |
 | `task-add` | [Task intake](references/task-add.md) | Read-only analysis workers and one task-document writer; preserve intake screenshots, do not claim or implement tasks. |
@@ -34,4 +29,4 @@ After selecting a route, read [the shared execution contract](references/common.
 
 For eligible passing PR reviews, the coordinator follows [automatic approval](references/review-approval.md); reviewers do not post or approve. A review loaded as an implementation evidence lane inherits the calling workflow's delivery boundary.
 
-For `build`, `fix`, and `task-run`, default to source inspection and the smallest relevant automated checks; preserve additional user-selected or authoritative acceptance requirements. Planning does not automatically enter build, review does not enter fix, and task intake does not enter execution. Never merge a PR.
+For `fix` and `task-run`, default to source inspection and the smallest relevant automated checks; preserve additional user-selected or authoritative acceptance requirements. Review does not enter fix, and task intake does not enter execution. Never merge a PR.

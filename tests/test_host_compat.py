@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "cyh-flow"
-MODES = {"plan", "build", "auto", "review", "re-review", "fix", "converge", "task-add", "task-run"}
+MODES = {"review", "fix", "converge", "task-add", "task-run"}
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -92,7 +92,6 @@ class HostCompatibilityTests(unittest.TestCase):
         entry = SKILL_ROOT / "SKILL.md"
         expected_routes = {
             **{mode: {f"{mode}.md"} for mode in MODES},
-            "build auto": {"build.md"},
             "review deep": {"review-deep.md"},
             "review auto": {"review.md", "review-auto.md"},
         }
@@ -108,7 +107,7 @@ class HostCompatibilityTests(unittest.TestCase):
         # Even following every conditional review link cannot reach implementation modes.
         pending = [SKILL_ROOT / "references" / name for name in {
             "common.md", "host-capabilities.md", "review.md", "review-deep.md",
-            "review-auto.md", "re-review.md", "review-approval.md",
+            "review-auto.md", "review-approval.md",
         }]
         visited = set()
         while pending:
@@ -147,7 +146,6 @@ class HostCompatibilityTests(unittest.TestCase):
 
     def test_host_specific_fallback_contracts_are_present(self) -> None:
         root_skill = (SKILL_ROOT / "references/host-capabilities.md").read_text(encoding="utf-8")
-        plan = (SKILL_ROOT / "references" / "plan.md").read_text(encoding="utf-8")
         review = (SKILL_ROOT / "references" / "review.md").read_text(encoding="utf-8")
         review_deep = (SKILL_ROOT / "references" / "review-deep.md").read_text(
             encoding="utf-8"
@@ -158,12 +156,6 @@ class HostCompatibilityTests(unittest.TestCase):
         review_auto = (SKILL_ROOT / "references" / "review-auto.md").read_text(
             encoding="utf-8"
         )
-        re_review = (SKILL_ROOT / "references" / "re-review.md").read_text(
-            encoding="utf-8"
-        )
-        re_reviewer = (
-            SKILL_ROOT / "references" / "review" / "re-reviewer.md"
-        ).read_text(encoding="utf-8")
         review_watcher = SKILL_ROOT / "scripts" / "review_watch.py"
         review_prepare = SKILL_ROOT / "scripts" / "review_prepare.py"
         review_artifacts = SKILL_ROOT / "scripts" / "review_artifacts.py"
@@ -171,7 +163,6 @@ class HostCompatibilityTests(unittest.TestCase):
 
         self.assertIn("not the Codex create/get/update Goal API", root_skill)
         self.assertIn("experimental agent teams", root_skill)
-        self.assertIn("editing-capable permission mode", plan)
         self.assertIn("without enabled persistent mailbox delivery", review_deep)
         self.assertIn("review-auto.md", review)
         self.assertIn("one fresh isolated read-only reviewer", review)
@@ -188,11 +179,6 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("exactly one fresh daily five-axis reviewer", review_auto)
         self.assertNotIn("all four specialist artifacts", review_auto)
         self.assertIn("scripts/review_watch.py", review_auto)
-        self.assertIn("exactly one fresh isolated read-only reviewer", re_review)
-        self.assertIn("--mode re-review --head-oid", re_review)
-        self.assertIn("Issue reconciliation", re_reviewer)
-        self.assertIn("All resolved", re_reviewer)
-        self.assertNotIn("review_watch.py", re_review)
         self.assertIn("Never run the repository's complete unit", review_deep)
         self.assertIn("integration-reliability", review_deep)
         self.assertNotIn("performance-engineer", review_deep)

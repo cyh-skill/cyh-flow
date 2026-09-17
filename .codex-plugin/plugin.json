@@ -9,7 +9,6 @@
   "license": "MIT",
   "keywords": [
     "software-delivery",
-    "planning",
     "code-review",
     "subagents",
     "workflow"
@@ -19,7 +18,7 @@
   "interface": {
     "displayName": "cyh-flow",
     "shortDescription": "One entry for software delivery workflows",
-    "longDescription": "One cyh-flow Skill routes planning, implementation, review, repair, convergence, and tasks to on-demand references.",
+    "longDescription": "One cyh-flow Skill routes review, repair, convergence, and tasks to on-demand references.",
     "developerName": "cyh-skill",
     "category": "Productivity",
     "capabilities": [
