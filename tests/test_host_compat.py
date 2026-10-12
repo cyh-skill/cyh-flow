@@ -33,8 +33,8 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 class HostCompatibilityTests(unittest.TestCase):
     def test_both_plugins_discover_the_same_skill_packages(self) -> None:
-        claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
-        codex = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
+        claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))
+        codex = json.loads((ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(claude["name"], codex["name"])
         self.assertEqual(codex["name"], "cyh-flow")
         self.assertEqual(claude["license"], codex["license"])
@@ -74,10 +74,10 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertNotIn("尚未附带开源许可证", readme)
 
     def test_single_entrypoint_preserves_explicit_host_invocation(self) -> None:
-        readme = (ROOT / "README.md").read_text()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
         metadata = frontmatter(SKILL_ROOT / "SKILL.md")
-        body = (SKILL_ROOT / "SKILL.md").read_text()
-        ui = (SKILL_ROOT / "agents/openai.yaml").read_text()
+        body = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        ui = (SKILL_ROOT / "agents/openai.yaml").read_text(encoding="utf-8")
         self.assertEqual(metadata["name"], "cyh-flow")
         self.assertIn("Use only when explicitly invoked", metadata["description"])
         self.assertIn("$ARGUMENTS", body)
@@ -100,7 +100,7 @@ class HostCompatibilityTests(unittest.TestCase):
         }
         pattern = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
         routes = {}
-        for line in entry.read_text().splitlines():
+        for line in entry.read_text(encoding="utf-8").splitlines():
             if line.startswith("| `"):
                 columns = line.split("|")
                 route = columns[1].strip().strip("`")
@@ -118,7 +118,7 @@ class HostCompatibilityTests(unittest.TestCase):
             if path in visited:
                 continue
             visited.add(path)
-            for link in pattern.findall(path.read_text()):
+            for link in pattern.findall(path.read_text(encoding="utf-8")):
                 if link.startswith(("https://", "http://", "#")):
                     continue
                 target = (path.parent / link.split("#", 1)[0]).resolve()
@@ -137,7 +137,7 @@ class HostCompatibilityTests(unittest.TestCase):
                 self.assertEqual(frontmatter(installed / "SKILL.md")["name"], skill_root.name)
                 self.assertTrue((installed / "agents/openai.yaml").is_file())
                 for markdown in installed.rglob("*.md"):
-                    for link in pattern.findall(markdown.read_text()):
+                    for link in pattern.findall(markdown.read_text(encoding="utf-8")):
                         if link.startswith(("https://", "http://", "#")):
                             continue
                         target = (markdown.parent / link.split("#", 1)[0]).resolve()
