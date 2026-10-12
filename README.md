@@ -1,6 +1,6 @@
 # cyh-flow
 
-面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，由一个 `cyh-flow` Skill 按需分发五种模式。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、一次性修复、持续收敛，以及带截图证据的长期任务池，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
+面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，包含按需分发五种模式的 `cyh-flow` Skill，以及收敛最终交付状态的 `final-state-cleanup` Skill。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、一次性修复、持续收敛、带截图证据的长期任务池，以及交付前的工作区与分支收尾，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
 ```text
 用户请求
@@ -32,7 +32,7 @@
 
 ## 安装
 
-`skills/cyh-flow/` 是完整、自包含的唯一 Skill，包含 `SKILL.md`、`agents/openai.yaml`、`references/` 和 `scripts/`。五种模式是内部协议，不再注册为五个 Skill；两个宿主的插件包装也只暴露这一个入口。
+`skills/cyh-flow/` 和 `skills/final-state-cleanup/` 是两个完整、自包含的 Skill，两个宿主的插件包装均包含它们。cyh-flow 的五种模式仍是内部协议；Final State Cleanup 使用独立入口，不改变现有模式的执行权限。
 
 ### Codex：使用简短的 `$cyh-flow/xxx`
 
@@ -42,7 +42,7 @@
 
 ### Codex：作为插件安装
 
-通过 Codex 插件管理界面或已配置的 marketplace 安装完整仓库。插件名和 Skill 名均为 `cyh-flow`，实际完整名称为 `$cyh-flow:cyh-flow`，调用示例为 `$cyh-flow:cyh-flow /review ...`；它仍然只有一个 Skill。插件安装不会自动生成 `$cyh-flow` 短别名，也不能把原生冒号命名空间改为斜杠。详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。
+通过 Codex 插件管理界面或已配置的 marketplace 安装完整仓库。插件名为 `cyh-flow`，两个 Skill 的完整名称分别为 `$cyh-flow:cyh-flow` 和 `$cyh-flow:final-state-cleanup`，调用示例为 `$cyh-flow:cyh-flow /review ...`。插件安装不会自动生成独立安装时的短别名，也不能把原生冒号命名空间改为斜杠。详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。
 
 本次仓库修改不会自动替换已有安装。更新安装后，新建会话并确认 Skill 列表只显示预期的一个 cyh-flow 入口。
 
@@ -57,7 +57,21 @@
 /plugin install cyh-flow@cyh-flow
 ```
 
-安装后使用 `/cyh-flow:cyh-flow review ...`；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用唯一的 `skills/cyh-flow/SKILL.md` 和内部资源。Claude Code 的原生命名空间为 `plugin-name:skill-name`，参见 [Claude Code Skill 文档](https://code.claude.com/docs/en/skills#where-skills-live)。
+安装后使用 `/cyh-flow:cyh-flow review ...` 或 `/cyh-flow:final-state-cleanup ...`；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用 `skills/` 中的 Skill 及其内部资源。Claude Code 的原生命名空间为 `plugin-name:skill-name`，参见 [Claude Code Skill 文档](https://code.claude.com/docs/en/skills#where-skills-live)。
+
+### Final State Cleanup
+
+将完整的 `skills/final-state-cleanup/` 目录独立安装到 Codex 的 `~/.codex/skills/final-state-cleanup/` 或项目 `.agents/skills/final-state-cleanup/`，即可使用 `$final-state-cleanup`；Claude Code 独立安装到 `~/.claude/skills/final-state-cleanup/`，使用 `/final-state-cleanup`。完整插件安装已包含此 Skill，避免再安装重复副本。
+
+```text
+$final-state-cleanup 在当前 Issue 或 PR 实现收尾时检查最终代码，删除探索冗余、临时文件和过期文档
+```
+
+此 Skill 的默认触发场景是 Issue 或 PR 的实现准备交付时，无需用户再要求清理；也支持显式整理现有工作区和分支。它会主动检查最终代码和完整任务 diff，删除中间探索遗留的冗余实现、临时文件和过期文档，将有效结论并入最终文档，再验证清理后的依赖、引用及受影响行为。有效测试、配置和必要验收证据属于最终交付的一部分。
+
+此 Skill 独立使用，由 Codex 根据任务语义自动选择，也可显式调用；自动选择的实际触发由宿主判断。它不修改 cyh-flow 五种模式的执行协议，也不安装后台监控或运行时 hook，不会监听 GitHub 的 Issue 关闭或 PR 合并事件。cyh-flow 原有入口继续保持仅显式调用。
+
+“分支收敛”指整理最终 diff 和文件内容，不会自行压缩提交、重写历史、提交或推送，也不以工作树必须无改动为目标。必要验收证据、未决事项及其他人的 WIP 会保留；删除本地分支或 worktree 需要用户明确要求，任何方式的 Merge PR 都禁止。最终结果直接在答复中说明，项目未要求时不额外生成清理报告或把中间材料搬进归档目录。
 
 ## 使用
 
@@ -131,14 +145,17 @@ Review 的角色设计参考并重新适配了以下公开项目；这里集中�
 
 ```text
 cyh-flow/
-|-- .codex-plugin/plugin.json       # Codex 插件清单，只包含一个 Skill
+|-- .codex-plugin/plugin.json       # Codex 插件清单，发现两个 Skill
 |-- .claude-plugin/                 # Claude Code 插件与 marketplace 清单
 |-- skills/
-|   `-- cyh-flow/
-|       |-- SKILL.md                # 唯一入口：模式选择与按需加载
-|       |-- agents/openai.yaml      # 展示名称与仅显式调用设置
-|       |-- references/             # 共享边界、五种模式与 Review 角色
-|       `-- scripts/                # PR 工具、watcher 与任务池工具
+|   |-- cyh-flow/
+|   |   |-- SKILL.md                # cyh-flow 入口：模式选择与按需加载
+|   |   |-- agents/openai.yaml      # 展示名称与仅显式调用设置
+|   |   |-- references/             # 共享边界、五种模式与 Review 角色
+|   |   `-- scripts/                # PR 工具、watcher 与任务池工具
+|   `-- final-state-cleanup/
+|       |-- SKILL.md                # 最终产物、文档与过程材料的收敛规则
+|       `-- agents/openai.yaml      # 展示名称与调用提示
 |-- tests/                         # 包装、加载边界和工具行为测试
 |-- LICENSE
 `-- README.md
@@ -146,7 +163,7 @@ cyh-flow/
 
 同一 Skill 目录中的文件不会全部进入上下文，只读取选中模式和当前阶段要求的协议；跨模式流水线按阶段加载必要 reference。内部资源与入口一起分发，独立安装不依赖插件根目录中的其他文件。
 
-修改后使用官方 `skill-creator` 校验 `skills/cyh-flow`，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、自包含资源、相对链接、加载边界和脚本行为；有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
+修改后使用官方 `skill-creator` 分别校验两个 Skill，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、自包含资源、相对链接、加载边界和脚本行为；CI 的 Skill 校验矩阵同时覆盖两个目录，有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
 
 ## 可见性与授权
 

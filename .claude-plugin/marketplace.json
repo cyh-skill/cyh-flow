@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "cyh-flow",
-      "description": "Review, repair, converge, and process repository task pools with explicit authorization boundaries",
+      "description": "Review, repair, converge, process repository task pools, and clean up final deliverable state with explicit authorization boundaries",
       "source": "./",
       "license": "MIT",
       "category": "development",

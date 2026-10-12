@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "cyh-flow"
+SKILL_ROOTS = (SKILL_ROOT, ROOT / "skills" / "final-state-cleanup")
 MODES = {"review", "fix", "converge", "task-add", "task-run"}
 
 
@@ -31,19 +32,21 @@ def frontmatter(path: Path) -> dict[str, str]:
 
 
 class HostCompatibilityTests(unittest.TestCase):
-    def test_both_plugins_discover_only_the_single_skill(self) -> None:
+    def test_both_plugins_discover_the_same_skill_packages(self) -> None:
         claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
         codex = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
         self.assertEqual(claude["name"], codex["name"])
         self.assertEqual(codex["name"], "cyh-flow")
         self.assertEqual(claude["license"], codex["license"])
         self.assertEqual(codex["license"], "MIT")
-        actual = list((ROOT / codex["skills"]).rglob("SKILL.md"))
-        self.assertEqual(actual, [SKILL_ROOT / "SKILL.md"])
-        self.assertEqual(claude["skills"], ["./skills/cyh-flow"])
+        actual = set((ROOT / codex["skills"]).rglob("SKILL.md"))
+        self.assertEqual(actual, {path / "SKILL.md" for path in SKILL_ROOTS})
+        self.assertEqual(
+            {ROOT / path for path in claude["skills"]}, set(SKILL_ROOTS)
+        )
         for path in claude["skills"]:
             self.assertTrue((ROOT / path / "SKILL.md").is_file())
-        self.assertEqual(list(ROOT.rglob("SKILL.md")), actual)
+        self.assertEqual(set(ROOT.rglob("SKILL.md")), actual)
 
     def test_marketplace_entry_matches_plugin(self) -> None:
         marketplace = json.loads(
@@ -127,19 +130,22 @@ class HostCompatibilityTests(unittest.TestCase):
 
     def test_standalone_copy_contains_all_runtime_resources(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            installed = Path(directory) / "cyh-flow"
-            shutil.copytree(SKILL_ROOT, installed, ignore=shutil.ignore_patterns("__pycache__"))
             pattern = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
-            for markdown in installed.rglob("*.md"):
-                for link in pattern.findall(markdown.read_text()):
-                    if link.startswith(("https://", "http://", "#")):
-                        continue
-                    target = (markdown.parent / link.split("#", 1)[0]).resolve()
-                    with self.subTest(markdown=markdown.name, link=link):
-                        self.assertTrue(target.is_relative_to(installed.resolve()))
-                        self.assertTrue(target.is_file())
+            for skill_root in SKILL_ROOTS:
+                installed = Path(directory) / skill_root.name
+                shutil.copytree(skill_root, installed, ignore=shutil.ignore_patterns("__pycache__"))
+                self.assertEqual(frontmatter(installed / "SKILL.md")["name"], skill_root.name)
+                self.assertTrue((installed / "agents/openai.yaml").is_file())
+                for markdown in installed.rglob("*.md"):
+                    for link in pattern.findall(markdown.read_text()):
+                        if link.startswith(("https://", "http://", "#")):
+                            continue
+                        target = (markdown.parent / link.split("#", 1)[0]).resolve()
+                        with self.subTest(skill=skill_root.name, markdown=markdown.name, link=link):
+                            self.assertTrue(target.is_relative_to(installed.resolve()))
+                            self.assertTrue(target.is_file())
             self.assertEqual(
-                {path.name for path in (installed / "scripts").glob("*.py")},
+                {path.name for path in (Path(directory) / "cyh-flow" / "scripts").glob("*.py")},
                 {"review_prepare.py", "review_watch.py", "review_publish.py",
                  "review_artifacts.py", "task_pool.py"},
             )

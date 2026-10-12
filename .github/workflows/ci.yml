@@ -17,13 +17,16 @@ jobs:
   validate-skill:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      matrix:
+        skill: [cyh-flow, final-state-cleanup]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate Skill package
         uses: cyh-skill/.github/actions/validate-skill@ed44478f6dd48649dd1b2ee7dd219d4af7699d8b
         with:
-          path: skills/cyh-flow
+          path: skills/${{ matrix.skill }}
 
   validate-and-test:
     runs-on: ubuntu-latest
