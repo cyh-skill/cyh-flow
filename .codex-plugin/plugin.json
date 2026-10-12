@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "cyh-flow",
     "shortDescription": "Software delivery and final-state cleanup",
-    "longDescription": "cyh-flow routes review, repair, convergence, and tasks to on-demand references; Final State Cleanup consolidates final deliverables and removes superseded process artifacts.",
+    "longDescription": "cyh-flow routes review, repair, convergence, and tasks to on-demand references; tidy consolidates final deliverables and removes superseded process artifacts.",
     "developerName": "cyh-skill",
     "category": "Productivity",
     "capabilities": [

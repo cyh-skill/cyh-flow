@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "cyh-flow"
-SKILL_ROOTS = (SKILL_ROOT, ROOT / "skills" / "final-state-cleanup")
+SKILL_ROOTS = (SKILL_ROOT, ROOT / "skills" / "tidy")
 MODES = {"review", "fix", "converge", "task-add", "task-run"}
 
 

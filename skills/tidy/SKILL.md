@@ -1,9 +1,9 @@
 ---
-name: final-state-cleanup
+name: tidy
 description: "Automatically inspect and clean up the final implementation when finishing an Issue or PR implementation task, before final validation and handoff, without waiting for a separate cleanup request. Remove redundant exploration code, temporary files, and obsolete process documents; preserve effective implementation and final documentation. Also use for explicit final-state workspace/branch cleanup. Read-only review, disk reclamation, and Git history rewriting are separate tasks."
 ---
 
-# Final State Cleanup
+# tidy
 
 将当前工作区和分支整理成可交付、可维护、可复核的最终状态：保留最终实现及其必要依赖、测试和文档，合并有价值的结论，删除已经失去用途的中间过程。直接完成有依据且在授权范围内的清理；只有具体内容的归属、最终版本或删除损失无法判断时，才用简短文本澄清，并继续处理其他独立项。
 

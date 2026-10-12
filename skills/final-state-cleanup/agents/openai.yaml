@@ -1,7 +1,0 @@
-interface:
-  display_name: "Final State Cleanup"
-  short_description: "Issue 或 PR 实现完成后自动清理探索残留，只保留有效实现和最终文档"
-  default_prompt: "使用 $final-state-cleanup 在当前 Issue 或 PR 实现收尾时检查最终代码，删除探索冗余、临时文件和过期文档，再验证最终交付状态。"
-
-policy:
-  allow_implicit_invocation: true
