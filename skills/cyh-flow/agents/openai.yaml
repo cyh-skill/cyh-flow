@@ -1,6 +1,6 @@
 interface:
   display_name: "cyh-flow"
-  short_description: "One entry for review, repair, convergence, and task workflows"
+  short_description: "Review, repair, convergence, tasks, and final-state cleanup"
   default_prompt: "Use $cyh-flow /review to review this change within its defined scope."
 
 policy:

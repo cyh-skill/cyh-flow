@@ -1,11 +1,11 @@
 ---
 name: cyh-flow
-description: Software delivery workflows for PR review, repair, convergence, and repository task pools. Use only when explicitly invoked as cyh-flow with a selected mode.
+description: Software delivery workflows for PR review, repair, convergence, repository task pools, and final-state cleanup. Use only when explicitly invoked as cyh-flow with a selected mode.
 ---
 
 # cyh-flow
 
-One Skill with on-demand modes. Preserve explicit-only invocation; ordinary mentions of reviewing, fixing, or converging do not activate this workflow.
+One Skill with on-demand modes. Preserve explicit-only invocation; ordinary mentions of reviewing, fixing, converging, or tidying do not activate this workflow.
 
 ## Invocation and routing
 
@@ -25,7 +25,10 @@ After selecting a route, read [the shared execution contract](references/common.
 | `fix` | [Repair](references/fix.md) | One repair writer, scoped read-only evidence workers, and focused validation. |
 | `converge` | [Convergence](references/converge.md) | Preserve user-selected evidence lanes, one repair writer, the finding ledger, and completion gate. |
 | `task-add` | [Task intake](references/task-add.md) | Read-only analysis workers and one task-document writer; preserve intake screenshots, do not claim or implement tasks. |
+| `tidy` | [Final-state cleanup](references/tidy.md) | One cleanup writer; preserve final deliverables and unrelated work; no automatic commit, push, or Git history rewriting. |
 | `task-run` | [Task execution](references/task-run.md) | Each worker atomically claims a task and checks file/resource conflicts before implementation. |
+
+For `tidy`, read only its route references and perform scoped cleanup with one writer; do not automatically invoke it from another mode.
 
 For eligible passing PR reviews, the coordinator follows [automatic approval](references/review-approval.md); reviewers do not post or approve. A review loaded as an implementation evidence lane inherits the calling workflow's delivery boundary.
 

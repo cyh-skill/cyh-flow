@@ -1,6 +1,6 @@
 # cyh-flow
 
-面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，包含按需分发五种模式的 `cyh-flow` Skill，以及收敛最终交付状态的 `tidy` Skill。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、一次性修复、持续收敛、带截图证据的长期任务池，以及交付前的工作区与分支收尾，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
+面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，包含一个按需分发六种模式的 `cyh-flow` Skill，其中 `tidy` 用于收敛最终交付状态。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、一次性修复、持续收敛、带截图证据的长期任务池，以及交付前的工作区与分支收尾，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
 ```text
 用户请求
@@ -9,10 +9,11 @@
    +-- fix      -> 修复一个明确问题 -> 针对性验证
    +-- converge -> Goal: 复查/测试 -> 修复 -> 重验 -> finding 归零
    +-- task-add -> 分析一批事项 -> 按天归档 Markdown + 截图
+   +-- tidy     -> 整理最终代码、文档与过程残留 -> 重验
    `-- task-run -> Agent 原子领取 -> 自主处理 -> done / waiting
 ```
 
-## 五种模式
+## 六种模式
 
 | 模式 | 适合处理 | 默认允许 | 默认不允许 |
 | --- | --- | --- | --- |
@@ -20,9 +21,10 @@
 | `fix` | 一次性修复明确 bug、失败行为或 Review finding | 多个只读 sub-Agent 并行定位根因、契约和验证面，由一个写者完成范围内修复与针对性验证 | 多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、PR、部署或外部写入 |
 | `converge` | 持续发现、修复并复查问题，直到目标范围内 finding 归零 | 建立 Goal 和 finding 台账，把用户定义的 Review、自动化测试、设备、Web、运行时、安全或性能证据通道尽可能拆给并行 sub-Agent，由一个写者修复 | 多修复写者竞争、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `task-add` | 批量收录 bug、小改动、杂项或后续工作 | 多个只读 sub-Agent 拆分事项和截图证据，主 Agent 去重后单写 `.cyh-flow/tasks/YYYY-MM-DD.md` 并原样保存截图 | 子 Agent 修改应用代码、竞争写任务池、领取或处理任务、提交、推送或外部写入 |
+| `tidy` | 整理当前任务的最终代码、文档与过程残留 | 一个清理写者、按需只读依赖分析、删除已确认失效内容并重跑受影响验证 | 自动提交、推送、改写历史、覆盖其他人的 WIP 或扩大成磁盘清理 |
 | `task-run` | 多 Agent 独立领取并处理任务池 | 以 Markdown 状态为准原子领取不同任务，修改前执行确定性文件/资源冲突闸门，再完成本地修改和验证 | 抢占 `doing` 任务、绕过领取或冲突闸门直接处理、未经明确要求的交付或外部写入 |
 
-五种模式全部采用与任务相称的 sub-Agent 拓扑：普通 `review` 和 `review auto` 固定一个 reviewer，`review deep` 才使用四路 specialist 与 fresh master，其他模式先拆依赖和可独立任务并使用最大有效并发；只有阶段确实不可再分或拆分成本明显超过收益时才由单 Agent 直接完成。并行不会扩大模式权限，多个写者不得碰重叠文件或 Git 状态，也不得同时操作同一浏览器、模拟器、设备、数据库、缓存、构建输出或外部环境。五种模式同时共享几条硬边界：永不 Merge PR；不擅自丢弃或覆盖用户工作；破坏性 Git 操作必须先说明精确目标和损失范围；源码检查、自动化测试、CI、部署运行时、UI/设备证据与业务验收分别报告，不能互相替代。
+各模式采用自己的 sub-Agent 拓扑：普通 `review` 和 `review auto` 固定一个 reviewer，`review deep` 才使用四路 specialist 与 fresh master；`tidy` 默认由协调者单写完成，仅在独立只读核查收益超过协调成本时委派分析；其他模式先拆依赖和可独立任务并使用最大有效并发，原子阶段或拆分成本超过收益时直接完成。并行不会扩大模式权限，多个写者不得碰重叠文件或 Git 状态，也不得同时操作同一浏览器、模拟器、设备、数据库、缓存、构建输出或外部环境。六种模式同时共享几条硬边界：永不 Merge PR；不擅自丢弃或覆盖用户工作；破坏性 Git 操作必须先说明精确目标和损失范围；源码检查、自动化测试、CI、部署运行时、UI/设备证据与业务验收分别报告，不能互相替代。
 
 `converge` 中的“finding 归零”是一个可验证停止条件，不是只重复代码 Review：finding 可以来自普通单 reviewer、`review deep`、自动化检查、模拟器或真机流程、Web 流程、运行时日志、安全、性能和业务验收。证据通道的决定权属于用户，你可以要求“只 Review”“只测指定浏览器流程”“模拟器 + Web”，也可以在过程中增加、替换或移除通道；Agent 必须把变更记录为 Goal 证据契约的修订，不能拿其他证据替代，也不能擅自增加阻塞通道。只有当你没有指定或明确把选择权交给 Agent 时，Agent 才会先声明一个与风险相称的最小组合，建议项只有经你接受后才成为完成门槛。任一用户必需通道中的受支持 finding、失败或重大未验证项都会阻止 Goal 完成，最终修复后必须重跑被影响的必需通道。它不表示对软件做“绝对无 bug”的不可证明承诺。
 
@@ -32,7 +34,7 @@
 
 ## 安装
 
-`skills/cyh-flow/` 和 `skills/tidy/` 是两个完整、自包含的 Skill，两个宿主的插件包装均包含它们。cyh-flow 的五种模式仍是内部协议；tidy 使用独立入口，不改变现有模式的执行权限。
+`skills/cyh-flow/` 是唯一完整、自包含的 Skill，两个宿主的插件包装均使用它。六种模式是入口解析的内部协议，`tidy` 的规则位于 `references/tidy.md`，随 cyh-flow 一起安装，无需额外安装入口。
 
 ### Codex：使用简短的 `$cyh-flow/xxx`
 
@@ -42,7 +44,7 @@
 
 ### Codex：作为插件安装
 
-通过 Codex 插件管理界面或已配置的 marketplace 安装完整仓库。插件名为 `cyh-flow`，两个 Skill 的完整名称分别为 `$cyh-flow:cyh-flow` 和 `$cyh-flow:tidy`，调用示例为 `$cyh-flow:cyh-flow /review ...`。插件安装不会自动生成独立安装时的短别名，也不能把原生冒号命名空间改为斜杠。详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。
+通过 Codex 插件管理界面或已配置的 marketplace 安装完整仓库。插件名为 `cyh-flow`，唯一 Skill 的完整名称为 `$cyh-flow:cyh-flow`，调用示例为 `$cyh-flow:cyh-flow /review ...`。插件安装不会自动生成独立安装时的短别名，也不能把原生冒号命名空间改为斜杠。详见 [OpenAI 插件打包文档](https://developers.openai.com/plugins/build/plugins)。
 
 本次仓库修改不会自动替换已有安装。更新安装后，新建会话并确认 Skill 列表只显示预期的一个 cyh-flow 入口。
 
@@ -57,19 +59,19 @@
 /plugin install cyh-flow@cyh-flow
 ```
 
-安装后使用 `/cyh-flow:cyh-flow review ...` 或 `/cyh-flow:tidy ...`；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用 `skills/` 中的 Skill 及其内部资源。Claude Code 的原生命名空间为 `plugin-name:skill-name`，参见 [Claude Code Skill 文档](https://code.claude.com/docs/en/skills#where-skills-live)。
+安装后使用 `/cyh-flow:cyh-flow review ...` 或 `/cyh-flow:cyh-flow tidy ...`；本地开发可用 `claude --plugin-dir /absolute/path/to/cyh-flow` 加载。两个宿主共用 `skills/` 中的 Skill 及其内部资源。Claude Code 的原生命名空间为 `plugin-name:skill-name`，参见 [Claude Code Skill 文档](https://code.claude.com/docs/en/skills#where-skills-live)。
 
 ### tidy
 
-完整插件安装已包含 `skills/tidy/`，Codex 使用 `$cyh-flow:tidy`，Claude Code 使用 `/cyh-flow:tidy`。通过 Skill Manager 管理时，从同一 GitHub 仓库导入 `skills/tidy` 并托管直装，保留单一 Git 来源入口，避免再复制独立安装副本。
+`tidy` 是 cyh-flow 的第六种模式。Skill Manager 只需管理现有的 `skills/cyh-flow`；内部 reference 随入口一起安装和更新，不会产生独立 tidy 条目。Codex 的 Skill 补全列表显示 cyh-flow 入口，选中后输入 `tidy ...`，不会出现独立 `$tidy` 或原生模式子菜单。
 
 ```text
-$cyh-flow:tidy 在当前 Issue 或 PR 实现收尾时检查最终代码，删除探索冗余、临时文件和过期文档
+$cyh-flow:cyh-flow tidy 在当前 Issue 或 PR 实现收尾时检查最终代码，删除探索冗余、临时文件和过期文档
 ```
 
-此 Skill 的默认触发场景是 Issue 或 PR 的实现准备交付时，无需用户再要求清理；也支持显式整理现有工作区和分支。它会主动检查最终代码和完整任务 diff，删除中间探索遗留的冗余实现、临时文件和过期文档，将有效结论并入最终文档，再验证清理后的依赖、引用及受影响行为。有效测试、配置和必要验收证据属于最终交付的一部分。
+独立安装使用 `$cyh-flow tidy ...` 或 `$cyh-flow/tidy ...`；Claude Code 插件使用 `/cyh-flow:cyh-flow tidy ...`。此模式仅在显式选择时执行，也可按用户指定顺序组合其他模式；不会在 fix、converge 或 task-run 完成后自动触发，不监听 Issue 关闭或 PR 合并事件。
 
-此 Skill 独立使用，由 Codex 根据任务语义自动选择，也可显式调用；自动选择的实际触发由宿主判断。它不修改 cyh-flow 五种模式的执行协议，也不安装后台监控或运行时 hook，不会监听 GitHub 的 Issue 关闭或 PR 合并事件。cyh-flow 原有入口继续保持仅显式调用。
+核心流程是确认范围、判断用途、整合清理、验证交接；条件规则分别用正向限定、负向排除和特殊例外表达。文档先判断是否需要长期独立存在，再决定精简或整合删除；文档清理核查相关文档、引用及必要证据，范围包含代码时才检查相关最终实现和完整任务 diff。有效测试、配置和必要验收证据属于最终交付的一部分。
 
 “分支收敛”指整理最终 diff 和文件内容，不会自行压缩提交、重写历史、提交或推送，也不以工作树必须无改动为目标。必要验收证据、未决事项及其他人的 WIP 会保留；删除本地分支或 worktree 需要用户明确要求，任何方式的 Merge PR 都禁止。最终结果直接在答复中说明，项目未要求时不额外生成清理报告或把中间材料搬进归档目录。
 
@@ -91,6 +93,8 @@ $cyh-flow/converge 持续检查结账流程直到 finding 归零；证据通道�
 $cyh-flow/task-add 把下面这批 bug 和小改动分析后收进任务池
 
 $cyh-flow/task-run 并发处理任务池里所有可执行事项，有问题集中问我
+
+$cyh-flow/tidy 整理当前任务的最终实现和文档，删除已确认无用的过程残留
 ```
 
 Codex 插件安装时改用 `$cyh-flow:cyh-flow /review deep PR #456`；Claude Code 独立安装用 `/cyh-flow review deep PR #456`，插件安装用 `/cyh-flow:cyh-flow review deep PR #456`。不要把 Claude Code 的 `/cyh-flow/review` 当作已注册的原生命令。
@@ -145,17 +149,14 @@ Review 的角色设计参考并重新适配了以下公开项目；这里集中�
 
 ```text
 cyh-flow/
-|-- .codex-plugin/plugin.json       # Codex 插件清单，发现两个 Skill
+|-- .codex-plugin/plugin.json       # Codex 插件清单，发现唯一 Skill
 |-- .claude-plugin/                 # Claude Code 插件与 marketplace 清单
 |-- skills/
-|   |-- cyh-flow/
-|   |   |-- SKILL.md                # cyh-flow 入口：模式选择与按需加载
-|   |   |-- agents/openai.yaml      # 展示名称与仅显式调用设置
-|   |   |-- references/             # 共享边界、五种模式与 Review 角色
-|   |   `-- scripts/                # PR 工具、watcher 与任务池工具
-|   `-- tidy/
-|       |-- SKILL.md                # 最终产物、文档与过程材料的收敛规则
-|       `-- agents/openai.yaml      # 展示名称与调用提示
+|   `-- cyh-flow/
+|       |-- SKILL.md                # 统一入口：六种模式选择与按需加载
+|       |-- agents/openai.yaml      # 展示名称与仅显式调用设置
+|       |-- references/             # 共享边界、六种模式（含 tidy.md）与 Review 角色
+|       `-- scripts/                # PR 工具、watcher 与任务池工具
 |-- tests/                         # 包装、加载边界和工具行为测试
 |-- LICENSE
 `-- README.md
@@ -163,7 +164,7 @@ cyh-flow/
 
 同一 Skill 目录中的文件不会全部进入上下文，只读取选中模式和当前阶段要求的协议；跨模式流水线按阶段加载必要 reference。内部资源与入口一起分发，独立安装不依赖插件根目录中的其他文件。
 
-修改后使用官方 `skill-creator` 分别校验两个 Skill，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、自包含资源、相对链接、加载边界和脚本行为；CI 的 Skill 校验矩阵同时覆盖两个目录，有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
+修改后使用官方 `skill-creator` 校验唯一 cyh-flow Skill，使用 `plugin-creator` 校验 Codex 插件，并运行 `python3 -m unittest discover -s tests -v` 检查双宿主清单、自包含资源、相对链接、加载边界和脚本行为；CI 校验 `skills/cyh-flow` 的完整包，有 Claude Code CLI 时还可运行 `claude plugin validate . --strict`。
 
 ## 可见性与授权
 

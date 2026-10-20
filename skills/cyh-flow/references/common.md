@@ -20,7 +20,9 @@ If the target, authorization, or destructive scope remains materially ambiguous 
 
 ## Subagent-first decomposition
 
-Every mode is subagent-first. Before substantial work, map dependencies and split independent bounded units that can safely run in parallel, then use the maximum useful subagent concurrency and dispatch the next ready unit as capacity opens. Atomic stages and work whose coordination cost exceeds its benefit stay with the coordinator.
+By default, modes are subagent-first; a mode-specific topology overrides this default. Before substantial work, map dependencies and split independent bounded units that can safely run in parallel, then use the maximum useful subagent concurrency and dispatch the next ready unit as capacity opens. Atomic stages and work whose coordination cost exceeds its benefit stay with the coordinator.
+
+The `tidy` mode overrides this default: the coordinator is the sole cleanup writer and completes ordinary cleanup directly; independent read-only dependency or reference checks are delegated only when the benefit exceeds coordination cost.
 
 Give every subagent an exact objective, minimum necessary context, scope and ownership, read/write and side-effect boundary, dependencies, acceptance evidence, and required return shape. Inspect and integrate every result; a completed agent or successful command is not proof that its task is accepted. Subagents inherit the selected mode's authorization and may never turn planning, review, intake, or validation into unauthorized implementation or external mutation.
 

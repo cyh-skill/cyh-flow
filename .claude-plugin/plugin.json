@@ -16,7 +16,6 @@
     "workflow"
   ],
   "skills": [
-    "./skills/cyh-flow",
-    "./skills/tidy"
+    "./skills/cyh-flow"
   ]
 }

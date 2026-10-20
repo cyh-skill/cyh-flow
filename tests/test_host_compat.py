@@ -10,8 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "cyh-flow"
-SKILL_ROOTS = (SKILL_ROOT, ROOT / "skills" / "tidy")
-MODES = {"review", "fix", "converge", "task-add", "task-run"}
+SKILL_ROOTS = (SKILL_ROOT,)
+MODES = {"review", "fix", "converge", "task-add", "task-run", "tidy"}
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -124,7 +124,7 @@ class HostCompatibilityTests(unittest.TestCase):
                 target = (path.parent / link.split("#", 1)[0]).resolve()
                 self.assertNotIn(target.name, {
                     "plan.md", "build.md", "auto.md", "converge.md",
-                    "fix.md", "task-add.md", "task-run.md", "SKILL.md",
+                    "fix.md", "task-add.md", "task-run.md", "tidy.md", "SKILL.md",
                 })
                 pending.append(target)
 

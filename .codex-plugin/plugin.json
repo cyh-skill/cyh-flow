@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "cyh-flow",
     "shortDescription": "Software delivery and final-state cleanup",
-    "longDescription": "cyh-flow routes review, repair, convergence, and tasks to on-demand references; tidy consolidates final deliverables and removes superseded process artifacts.",
+    "longDescription": "One cyh-flow Skill routes review, repair, convergence, tasks, and tidy cleanup to on-demand references.",
     "developerName": "cyh-skill",
     "category": "Productivity",
     "capabilities": [
