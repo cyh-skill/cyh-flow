@@ -11,7 +11,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "cyh-flow"
 SKILL_ROOTS = (SKILL_ROOT,)
-MODES = {"review", "fix", "converge", "task-add", "task-run", "tidy"}
+MODE_REFERENCES = {
+    "review": "review.md",
+    "pr fix": "pr-fix.md",
+    "converge": "converge.md",
+    "task-add": "task-add.md",
+    "task-run": "task-run.md",
+    "tidy": "tidy.md",
+}
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -86,15 +93,15 @@ class HostCompatibilityTests(unittest.TestCase):
         self.assertIn("/cyh-flow:cyh-flow review", body)
         self.assertIn('display_name: "cyh-flow"', ui)
         self.assertIn("allow_implicit_invocation: false", ui)
-        for mode in MODES:
+        for mode, reference in MODE_REFERENCES.items():
             with self.subTest(mode=mode):
                 self.assertIn(f"$cyh-flow/{mode}", readme)
-                self.assertTrue((SKILL_ROOT / "references" / f"{mode}.md").is_file())
+                self.assertTrue((SKILL_ROOT / "references" / reference).is_file())
 
     def test_route_index_keeps_mode_specific_loading(self) -> None:
         entry = SKILL_ROOT / "SKILL.md"
         expected_routes = {
-            **{mode: {f"{mode}.md"} for mode in MODES},
+            **{mode: {reference} for mode, reference in MODE_REFERENCES.items()},
             "review deep": {"review-deep.md"},
             "review auto": {"review.md", "review-auto.md"},
         }
@@ -124,7 +131,7 @@ class HostCompatibilityTests(unittest.TestCase):
                 target = (path.parent / link.split("#", 1)[0]).resolve()
                 self.assertNotIn(target.name, {
                     "plan.md", "build.md", "auto.md", "converge.md",
-                    "fix.md", "task-add.md", "task-run.md", "tidy.md", "SKILL.md",
+                    "fix.md", "pr-fix.md", "task-add.md", "task-run.md", "tidy.md", "SKILL.md",
                 })
                 pending.append(target)
 

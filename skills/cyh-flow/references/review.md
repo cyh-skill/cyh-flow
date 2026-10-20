@@ -22,7 +22,7 @@ If an isolated worker is unavailable, perform the same daily-reviewer protocol o
 
 The reviewer reads the complete diff and enough surrounding requirements, tests, callers, contracts, configuration, and history to support its claims. It evaluates correctness, readability and simplicity, architecture, security, and performance in one pass. It inspects the author's verification story and dependency or dead-code implications when relevant. Suspicious code remains a hypothesis until the reviewer establishes that the target introduced it, identifies a reachable trigger and concrete impact, and checks plausible counterevidence.
 
-Review discovers and explains problems through source inspection, relevant tests, existing CI evidence, and the smallest candidate-specific non-mutating check needed to prove or falsify a concrete concern. Its write surface is an approved system temporary directory or disposable source copy. Full validation suites, dependency installation, target mutation, and CI waiting belong to implementation or explicitly selected validation workflows.
+Review evaluates behavior and explains problems through source inspection, relevant tests, existing CI evidence, and the smallest review-specific non-mutating checks. Read and apply [the shared data-validation rule](review/data-validation.md) whenever review needs data validation. Its write surface is an approved system temporary directory or disposable source copy. Full validation suites, dependency installation, target mutation, and CI waiting belong to implementation or explicitly selected validation workflows.
 
 ## Interpret the result
 
@@ -49,4 +49,4 @@ After a passing PR review, apply [the shared approval rule](review-approval.md),
 
 ## Side-effect boundary
 
-Review's default write surface is its temporary result. The bounded comment delivery above, `review auto`, or a separate posting request may add the stated ordinary comment; the shared approval rule additionally authorizes a formal Approve review for an eligible passing PR. Repair enters `fix`; a repeated finding-zero objective enters `converge`. Source edits, commits, pushes, thread resolution, Request changes or other formal review mutations beyond that approval, other PR mutation, and messages remain outside review authorization. Never merge a PR.
+Review's default write surface is its temporary result. The bounded comment delivery above, `review auto`, or a separate posting request may add the stated ordinary comment; the shared approval rule additionally authorizes a formal Approve review for an eligible passing PR. PR review-feedback repair enters `pr fix` only when explicitly selected; a repeated finding-zero objective enters `converge`. Source edits, commits, pushes, thread resolution, Request changes or other formal review mutations beyond that approval, other PR mutation, and messages remain outside review authorization. Never merge a PR.

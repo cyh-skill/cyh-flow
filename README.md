@@ -1,12 +1,12 @@
 # cyh-flow
 
-面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，包含一个按需分发六种模式的 `cyh-flow` Skill，其中 `tidy` 用于收敛最终交付状态。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、一次性修复、持续收敛、带截图证据的长期任务池，以及交付前的工作区与分支收尾，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
+面向 Codex、同时兼容 Claude Code 的跨项目软件交付工作流插件，包含一个按需分发六种模式的 `cyh-flow` Skill，其中 `tidy` 用于收敛最终交付状态。Codex 是优先宿主，两端共用同一套模式、授权边界与仓库台账；宿主能力不等价时使用明确降级，不把 Codex 的 Goal API 或 Agent mailbox 虚构成 Claude Code 的同名能力。它用于一次性或无人值守 PR 审查、同事 Review 意见的修复与回复、持续收敛、带截图证据的长期任务池，以及交付前的工作区与分支收尾，避免“先看看”被误解为直接改代码，也避免一次实现请求被自动扩大成提交、推送或部署。
 
 ```text
 用户请求
    |
    +-- review    -> 日常单 reviewer；deep：四路 specialist + 主审证伪；auto：单 reviewer 跟进 PR
-   +-- fix      -> 修复一个明确问题 -> 针对性验证
+   +-- pr fix   -> 核实同事 Review -> 用户决策（需要时）-> 修复验证 -> PR 回复方案
    +-- converge -> Goal: 复查/测试 -> 修复 -> 重验 -> finding 归零
    +-- task-add -> 分析一批事项 -> 按天归档 Markdown + 截图
    +-- tidy     -> 整理最终代码、文档与过程残留 -> 重验
@@ -18,7 +18,7 @@
 | 模式 | 适合处理 | 默认允许 | 默认不允许 |
 | --- | --- | --- | --- |
 | `review` | 日常审查工作区、分支、提交或 Pull Request；`review deep` 执行多 Agent 深审；`review auto` 无人值守跟进 GitHub PR | 普通和 auto 每轮只用一个五轴 reviewer；deep 才运行四个 specialist 与 fresh master；GitHub PR 统一通过已认证 `gh` 一次缓存原始证据，只为具体候选运行最小复现并用脚本幂等发布评论；审查通过后直接 Approve 他人的明确指定 PR | 普通或 auto 偷启多 Agent，跑完整单测、全量 lint/typecheck/build/E2E 或等待 CI，把这些当作 review gate，冻结或锁定 PR，为 Review 切换当前 checkout，直接修复、提交、推送、未通过就 Approve、Request changes、Resolve thread 或 Merge |
-| `fix` | 一次性修复明确 bug、失败行为或 Review finding | 多个只读 sub-Agent 并行定位根因、契约和验证面，由一个写者完成范围内修复与针对性验证 | 多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、PR、部署或外部写入 |
+| `pr fix` | 处理指定 PR 中同事的 Review 意见 | 逐条核实意见，多个只读 sub-Agent 分析、一个写者修复并验证；需要用户决定时先整理选项与影响并询问；完成后在对应 PR 讨论中回复方案和实际结果 | 擅自代替用户做关键决策、多写者竞争修复、自动扩大为长期 Goal、未经明确要求的提交、推送、Resolve thread、部署或生产写入 |
 | `converge` | 持续发现、修复并复查问题，直到目标范围内 finding 归零 | 建立 Goal 和 finding 台账，把用户定义的 Review、自动化测试、设备、Web、运行时、安全或性能证据通道尽可能拆给并行 sub-Agent，由一个写者修复 | 多修复写者竞争、未经明确要求的提交、推送、PR、部署、生产写入或对外消息 |
 | `task-add` | 批量收录 bug、小改动、杂项或后续工作 | 多个只读 sub-Agent 拆分事项和截图证据，主 Agent 去重后单写 `.cyh-flow/tasks/YYYY-MM-DD.md` 并原样保存截图 | 子 Agent 修改应用代码、竞争写任务池、领取或处理任务、提交、推送或外部写入 |
 | `tidy` | 整理当前任务的最终代码、文档与过程残留 | 一个清理写者、按需只读依赖分析、删除已确认失效内容并重跑受影响验证 | 自动提交、推送、改写历史、覆盖其他人的 WIP 或扩大成磁盘清理 |
@@ -31,6 +31,8 @@
 `review auto` 把普通单 reviewer 审查套在无人值守事件循环外层，不调用 deep 的四路与 Master。首轮 Review 前先启动 `skills/cyh-flow/scripts/review_watch.py`，由这个纯 Python 进程每约 30 秒通过 `gh` 查询 head SHA 和人工 Issue/Review/inline 评论，不轮询 Checks；它在安静期间不输出，只有检测到事件或连续失败才返回一条结构化 JSON，因此 GitHub 查询和差分本身不消耗 AI token，宿主若必须定期续接长运行进程则仍会有很小的句柄续等开销。每轮由 `review_prepare.py` 机械缓存一次原始 PR 内容与临时源码对象，一个 fresh reviewer 完成五轴检查，`review_publish.py` 一次完成评论指纹、查重、发布和回读。新的提交一定触发下一轮，人工讨论先唤醒 Agent 判断是否影响需求、范围、实现证据或 finding 状态；自己的带指纹评论和 bot 评论不会触发循环。只有最新完整轮次达到 `Review-ready`、watcher 没有未处理事件且适用的自动批准已经验证，或者用户明确说“结束/停止”，Goal 才结束；没有新动静、查询暂时失败或 Review 不完整都不算完成，CI pending 或失败只作为观察信息，不单独阻止 Review-ready。脚本只随承载它的执行进程存活，跨会话常驻仍需 Scheduled task、launchd、CI 或 webhook，Skill 不会谎称子进程已经变成后台服务。
 
 普通 `review`、`review deep` 和 `review auto` 审查他人明确指定的 GitHub PR 时，通过对应审查门槛后直接提交正式 **Approve review**，无需再次确认；用户明确要求仅本地审查或不要批准时除外。批准前确认当前 head 与已审查提交一致，提交时绑定该 commit，并回读验证 `APPROVED` 状态；有必修问题、关键未验证项或新提交尚未审查时不批准，也不批准自己的 PR。普通评论与本地通过结论不能代替正式批准，任何模式都禁止 Merge PR。
+
+`pr fix` 聚焦一个 PR 的同事 Review：读取完整 Review 正文、行内线程与相关讨论，确认当前 head 是否仍有该问题，再按条目核实、修复和验证。需要产品取舍、兼容策略或其他 Agent 无法负责决定的事项时，先汇总原评论、选项、建议与影响，在当前对话询问用户，依赖该决策的修改等待答复，其余独立事项继续。完成后回复原线程，说明处理方案、实际改动、验证结果与限制；没有可回复行内线程的 Review 使用带原评论链接的 PR 评论。显式调用授权这些回复，提交和推送沿用会话中已有的授权，回复须准确区分本地修复和已更新 PR 的状态，发布后回读并报告链接，不自动 Resolve thread。
 
 ## 安装
 
@@ -69,7 +71,7 @@
 $cyh-flow:cyh-flow tidy 在当前 Issue 或 PR 实现收尾时检查最终代码，删除探索冗余、临时文件和过期文档
 ```
 
-独立安装使用 `$cyh-flow tidy ...` 或 `$cyh-flow/tidy ...`；Claude Code 插件使用 `/cyh-flow:cyh-flow tidy ...`。此模式仅在显式选择时执行，也可按用户指定顺序组合其他模式；不会在 fix、converge 或 task-run 完成后自动触发，不监听 Issue 关闭或 PR 合并事件。
+独立安装使用 `$cyh-flow tidy ...` 或 `$cyh-flow/tidy ...`；Claude Code 插件使用 `/cyh-flow:cyh-flow tidy ...`。此模式仅在显式选择时执行，也可按用户指定顺序组合其他模式；不会在 pr fix、converge 或 task-run 完成后自动触发，不监听 Issue 关闭或 PR 合并事件。
 
 核心流程是确认范围、判断用途、整合清理、验证交接；条件规则分别用正向限定、负向排除和特殊例外表达。文档先判断是否需要长期独立存在，再决定精简或整合删除；文档清理核查相关文档、引用及必要证据，范围包含代码时才检查相关最终实现和完整任务 diff。有效测试、配置和必要验收证据属于最终交付的一部分。
 
@@ -86,7 +88,7 @@ $cyh-flow/review deep PR #456，使用四路 specialist 和 fresh master 深度�
 
 $cyh-flow/review auto https://github.com/acme/payments/pull/456，无人值守审查并把问题发到 PR
 
-$cyh-flow/fix 修复 Review 发现的并发问题，并运行针对性回归测试
+$cyh-flow/pr fix PR #456，处理同事的 Review，需要我决策的先问我，完成后在 PR 回复修复方案和验证结果
 
 $cyh-flow/converge 持续检查结账流程直到 finding 归零；证据通道：review deep、iOS 模拟器、结账 Web 流程
 
@@ -99,7 +101,9 @@ $cyh-flow/tidy 整理当前任务的最终实现和文档，删除已确认无�
 
 Codex 插件安装时改用 `$cyh-flow:cyh-flow /review deep PR #456`；Claude Code 独立安装用 `/cyh-flow review deep PR #456`，插件安装用 `/cyh-flow:cyh-flow review deep PR #456`。不要把 Claude Code 的 `/cyh-flow/review` 当作已注册的原生命令。
 
-cyh-flow 的契约仍是仅显式调用：自然语言中的 review、fix 或 converge 不会自动启用这套流程。入口先识别模式，只加载共享执行边界、宿主能力说明和选中模式的协议；`review deep` / `review auto` 由紧随模式的参数选择，普通 review 不加载 deep、实现或任务池协议。缺少模式或模式无法识别时先确认，不默认选择模式。不同模式组合时保留各阶段的权限边界，审查不会自动变成修复，task-add 不会自动处理任务。
+`pr fix` 是一个由两个相邻参数组成的完整模式：独立安装可用 `$cyh-flow pr fix PR #456`，Codex 插件用 `$cyh-flow:cyh-flow /pr fix PR #456`，Claude Code 独立或插件安装分别用 `/cyh-flow pr fix PR #456`、`/cyh-flow:cyh-flow pr fix PR #456`。原来的单独 `fix` 入口已替换，`pr` 单独出现也不选择模式。
+
+cyh-flow 的契约仍是仅显式调用：自然语言中的 review、pr fix 或 converge 不会自动启用这套流程。入口先识别完整模式，只加载共享执行边界、宿主能力说明和选中模式的协议；`pr fix` 消耗前两个参数，`review deep` / `review auto` 由紧随 review 的参数选择，普通 review 不加载 deep、实现或任务池协议。缺少模式或模式无法识别时先确认，不默认选择模式。不同模式组合时保留各阶段的权限边界，审查不会自动变成修复，task-add 不会自动处理任务。
 
 ### 调用语法依据与限制
 

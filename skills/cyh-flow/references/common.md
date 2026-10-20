@@ -2,7 +2,7 @@
 
 Read this contract plus only the selected workflow reference. Do not load unrelated mode references. Resolve `<resource-root>` as the Skill directory containing `SKILL.md`, `references/`, and `scripts/`; script paths use that root, never the user's working directory. In workflow notation, `<cyh-flow> MODE` means selecting MODE through the single cyh-flow Skill: standalone Codex uses `$cyh-flow/MODE` or `$cyh-flow MODE`, and the plugin uses `$cyh-flow:cyh-flow /MODE`; standalone Claude Code uses `/cyh-flow MODE`, and the plugin uses `/cyh-flow:cyh-flow MODE`. These are host prompt invocations, not shell commands.
 
-Compose only explicitly selected workflows. A reference loaded as an evidence lane inherits the calling workflow’s write boundary; loading review during local implementation does not authorize GitHub posting or approval. Commit, push, PR creation, deployment, production writes, and messages require explicit user intent except for the bounded comment and approval actions in an explicitly invoked PR review workflow.
+Compose only explicitly selected workflows. A reference loaded as an evidence lane inherits the calling workflow’s write boundary; loading review during local implementation does not authorize GitHub posting or approval. Commit, push, PR creation, deployment, production writes, and messages require explicit user intent except for the bounded comment and approval actions in an explicitly invoked PR review workflow and feedback replies in an explicitly invoked `pr fix` workflow.
 
 ## Establish project context
 

@@ -24,6 +24,8 @@ Treat change size as an inspection signal rather than a mechanical defect: rough
 
 ## Evidence gate
 
+Read and apply [the shared data-validation rule](data-validation.md) whenever review needs data validation, including business behavior and impact assessment before any suspected defect exists.
+
 Admit a required finding only when the target introduced or materially exposed it, a current input or execution path reaches it, the consequence is concrete, and the author would likely change it. Check surrounding code, callers, tests, history, or contracts for counterevidence. Do not flag pre-existing problems, intentional behavior, generic best practices, unstated assumptions, or cosmetic preferences as required.
 
 Categorize feedback as follows:

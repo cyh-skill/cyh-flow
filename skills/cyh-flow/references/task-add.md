@@ -41,4 +41,4 @@ Do not manually synthesize IDs or rewrite existing task sections. If the same wo
 
 ## Completion
 
-Complete this mode by reporting the dated Markdown path, new task IDs, preserved screenshot paths, duplicate relationships, and uncertainty retained for execution. Implementation begins through a later `task-run` or build/fix request.
+Complete this mode by reporting the dated Markdown path, new task IDs, preserved screenshot paths, duplicate relationships, and uncertainty retained for execution. Implementation begins through a later `task-run` or explicit implementation request; PR review-feedback repair uses an explicitly selected `pr fix`.

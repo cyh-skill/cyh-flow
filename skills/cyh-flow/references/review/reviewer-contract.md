@@ -22,7 +22,7 @@ A specialist candidate must establish:
 
 The fresh master, not each specialist, owns final requirement-scope decisions, repair ownership, repair boundary, and P0-P3 priority. Do not spend tokens proposing severity, confidence, or a fix direction. If reachability, impact, or a required authority cannot be established, record a material `open_question` instead of upgrading the hypothesis into a candidate. A condition, enum, accepted parameter, or UI gate alone does not prove a producible business state or backend authorization failure.
 
-Review evidence consists of relevant source and tests, existing CI, and the smallest candidate-specific non-mutating reproduction or check needed to prove or falsify a concrete claim. The lane remains read-only apart from its assigned temporary artifact and uses installed dependencies. Complete validation suites and mutation of the target, Git metadata, user configuration, remote services, browser, infrastructure, or production state belong outside this contract.
+Review evidence consists of relevant source and tests, existing CI, and the smallest review-specific non-mutating reproduction or check. Read and apply [the shared data-validation rule](data-validation.md) whenever review needs data validation, including business behavior and impact assessment before any candidate exists. The lane remains read-only apart from its assigned temporary artifact and uses installed dependencies. Complete validation suites and mutation of the target, Git metadata, user configuration, remote services, browser, infrastructure, or production state belong outside this contract.
 
 ## Compact specialist artifact
 

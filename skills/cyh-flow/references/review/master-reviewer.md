@@ -12,6 +12,8 @@ The preparation cache is raw transport for an observed target, without a shared 
 
 Build the requirement baseline, explicit accepted or deferred scope decisions, ownership map, and impact closure directly from requirements, source, history, callers, consumers, contracts, tests, configuration, and already-available checks. From each changed producer, trace affected and intentionally preserved consumers, including roles, tenants, platforms, stored data, jobs, retries, failure paths, initialization, update, cleanup, migration, and rollback. Record any unexplained material surface.
 
+Read and apply [the shared data-validation rule](data-validation.md) whenever review needs data validation, both for the independent baseline and for candidate rechecks.
+
 Treat every specialist candidate as an untrusted hypothesis. Reopen the relevant code and actively seek counterexamples in the baseline, state producers, entry points, role combinations, authoritative contracts, history, alternate paths, tests, and runtime evidence. Reviewer agreement is provenance; proof comes from inspected evidence. Run the smallest candidate-specific non-mutating check needed for a decision. Complete validation suites and CI waiting are outside the clean gate.
 
 A claim may become a verified finding or advisory only after the master establishes all five gates:
